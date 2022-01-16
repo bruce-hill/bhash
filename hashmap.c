@@ -24,13 +24,13 @@ static inline size_t hash_pointer(void *p)
     return (s >> 5) | (s << (sizeof(void*) - 5));
 }
 
-static void hashmap_resize(hashmap_t *h, size_t new_size)
+static void hashmap_resize(hashmap_t *h, int new_size)
 {
     hashmap_t tmp = *h;
-    h->entries = calloc(new_size, sizeof(hashmap_entry_t));
+    h->entries = calloc((size_t)new_size, sizeof(hashmap_entry_t));
     h->capacity = new_size;
     h->count = 0;
-    h->next_free = (int)(new_size - 1);
+    h->next_free = new_size - 1;
     if (tmp.entries) {
         // Rehash:
         for (int i = 0; i < tmp.capacity; i++)
@@ -50,7 +50,7 @@ hashmap_t *new_hashmap(hashmap_t *fallback)
 void *hashmap_get(hashmap_t *h, void *key)
 {
     if (h->capacity > 0) {
-        int i = (int)(hash_pointer(key) & (h->capacity-1));
+        int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
         while (i != -1 && h->entries[i].key) {
             if (key == h->entries[i].key)
                 return h->entries[i].value;
@@ -64,7 +64,7 @@ void *hashmap_get(hashmap_t *h, void *key)
 void *hashmap_pop(hashmap_t *h, void *key)
 {
     if (h->capacity == 0) return NULL;
-    int i = (int)(hash_pointer(key) & (h->capacity-1));
+    int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
     int prev = i;
     while (h->entries[i].key != key) {
         if (h->entries[i].next == -1)
@@ -103,7 +103,7 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
     if ((h->count + 1) >= h->capacity)
         hashmap_resize(h, h->capacity*2);
 
-    int i = (int)(hash_pointer(key) & (h->capacity-1));
+    int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
     if (h->entries[i].key == NULL) { // No collision
         h->entries[i].key = key;
         h->entries[i].value = value;
@@ -124,7 +124,7 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
         }
         int free = h->next_free;
 
-        int i2 = (int)(hash_pointer(h->entries[i].key) & (h->capacity-1));
+        int i2 = (int)(hash_pointer(h->entries[i].key) & (size_t)(h->capacity-1));
         if (i2 == i) { // Collision with element in its main position
             // Before: colliding@i -> next
             // After:  colliding@i -> noob@free -> next
@@ -155,7 +155,7 @@ void *hashmap_next(hashmap_t *h, void *key)
     if (h->capacity == 0) return NULL;
     int i = 0;
     if (key) {
-        i = (int)(hash_pointer(key) & (h->capacity-1));
+        i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
         if (!h->entries[i].key) {
             i = 0;
         } else {

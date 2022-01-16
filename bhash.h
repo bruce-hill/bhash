@@ -25,7 +25,6 @@ typedef struct hashmap_s {
 } hashmap_t;
 
 // Allocate a new hash map
-__attribute__((nonnull))
 hashmap_t *new_hashmap(hashmap_t *fallback);
 // Retrieve a value from a hash map (or return NULL) if not found
 __attribute__((nonnull))
@@ -59,7 +58,6 @@ typedef struct hashset_s {
 } hashset_t;
 
 // Allocate a new hash set
-__attribute__(())
 hashset_t *new_hashset(hashmap_t *fallback);
 // Return whether or not the hash set contains a given item
 __attribute__((nonnull))

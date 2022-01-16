@@ -25,13 +25,13 @@ static size_t hash_pointer(void *p)
     return (s >> 5) | (s << (sizeof(void*) - 5));
 }
 
-static void hashset_resize(hashset_t *h, size_t new_size)
+static void hashset_resize(hashset_t *h, int new_size)
 {
     hashset_t tmp = *h;
-    h->entries = calloc(new_size, sizeof(hashset_entry_t));
+    h->entries = calloc((size_t)new_size, sizeof(hashset_entry_t));
     h->capacity = new_size;
     h->count = 0;
-    h->next_free = (int)(new_size - 1);
+    h->next_free = new_size - 1;
     if (tmp.entries) {
         // Rehash:
         for (int i = 0; i < tmp.capacity; i++)
@@ -51,7 +51,7 @@ hashset_t *new_hashset(hashset_t *fallback)
 bool hashset_contains(hashset_t *h, void *item)
 {
     if (h->capacity > 0) {
-        int i = (int)(hash_pointer(item) & (h->capacity-1));
+        int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
         while (i != -1 && h->entries[i].item) {
             if (item == h->entries[i].item)
                 return true;
@@ -64,7 +64,7 @@ bool hashset_contains(hashset_t *h, void *item)
 bool hashset_remove(hashset_t *h, void *item)
 {
     if (h->capacity == 0) return false;
-    int i = (int)(hash_pointer(item) & (h->capacity-1));
+    int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
     int prev = i;
     while (h->entries[i].item != item) {
         if (h->entries[i].next == -1)
@@ -102,7 +102,7 @@ bool hashset_add(hashset_t *h, void *item)
     if ((h->count + 1) >= h->capacity)
         hashset_resize(h, h->capacity*2);
 
-    int i = (int)(hash_pointer(item) & (h->capacity-1));
+    int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
     if (h->entries[i].item == NULL) { // No collision
         h->entries[i].item = item;
         h->entries[i].next = -1;
@@ -119,7 +119,7 @@ bool hashset_add(hashset_t *h, void *item)
         }
         int free = h->next_free;
 
-        int i2 = (int)(hash_pointer(h->entries[i].item) & (h->capacity-1));
+        int i2 = (int)(hash_pointer(h->entries[i].item) & (size_t)(h->capacity-1));
         if (i2 == i) { // Collision with element in its main position
             // Before: colliding@i -> next
             // After:  colliding@i -> noob@free -> next
@@ -148,7 +148,7 @@ void *hashset_next(hashset_t *h, void *item)
     if (h->capacity == 0) return NULL;
     int i = 0;
     if (item) {
-        i = (int)(hash_pointer(item) & (h->capacity-1));
+        i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
         if (!h->entries[i].item) {
             i = 0;
         } else {

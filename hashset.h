@@ -19,7 +19,6 @@ typedef struct hashset_s {
 } hashset_t;
 
 // Allocate a new hash set
-__attribute__(())
 hashset_t *new_hashset(hashset_t *fallback);
 // Return whether or not the hash set contains a given item
 __attribute__((nonnull))

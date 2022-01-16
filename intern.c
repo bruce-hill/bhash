@@ -33,7 +33,7 @@ static void hashset_add(intern_t *h, const char *key);
 static size_t hash_str(const char *s)
 {
     register const unsigned char *p = (const unsigned char *)s;
-    register size_t h = *p << 7;
+    register size_t h = (size_t)(*p << 7);
     register size_t len = 0;
     while (*p) {
         h = (1000003*h) ^ *p++;
@@ -48,13 +48,13 @@ static size_t hash_str(const char *s)
     return h;
 }
 
-static void hashset_resize(intern_t *h, size_t new_size)
+static void hashset_resize(intern_t *h, int new_size)
 {
     intern_t tmp = *h;
-    h->entries = calloc(new_size, sizeof(intern_entry_t));
+    h->entries = calloc((size_t)new_size, sizeof(intern_entry_t));
     h->capacity = new_size;
     h->count = 0;
-    h->next_free = (int)(new_size - 1);
+    h->next_free = new_size - 1;
     if (tmp.entries) {
         // Rehash:
         for (int i = 0; i < tmp.capacity; i++)
@@ -67,7 +67,7 @@ static void hashset_resize(intern_t *h, size_t new_size)
 static const char *hashset_get(intern_t *h, char *key)
 {
     if (h->capacity == 0) return NULL;
-    int i = (int)(hash_str(key) & (h->capacity-1));
+    int i = (int)(hash_str(key) & (size_t)(h->capacity-1));
     while (i != -1 && h->entries[i].key) {
         if (strcmp(key, h->entries[i].key) == 0)
             return h->entries[i].key;
@@ -84,7 +84,7 @@ static void hashset_add(intern_t *h, const char *key)
     if ((h->count + 1) >= h->capacity)
         hashset_resize(h, h->capacity*2);
 
-    int i = (int)(hash_str(key) & (h->capacity-1));
+    int i = (int)(hash_str(key) & (size_t)(h->capacity-1));
     if (h->entries[i].key == NULL) { // No collision
         h->entries[i].key = key;
         h->entries[i].next = -1;
@@ -100,7 +100,7 @@ static void hashset_add(intern_t *h, const char *key)
         }
         int free = h->next_free;
 
-        int i2 = (int)(hash_str(h->entries[i].key) & (h->capacity-1));
+        int i2 = (int)(hash_str(h->entries[i].key) & (size_t)(h->capacity-1));
         if (i2 == i) { // Collision with element in its main position
             // Before: colliding@i -> next
             // After:  colliding@i -> noob@free -> next
