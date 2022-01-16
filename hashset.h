@@ -6,9 +6,8 @@ typedef struct {
 } hashset_entry_t;
 
 typedef struct {
-    size_t capacity, occupancy;
     hashset_entry_t *entries;
-    int next_free;
+    int capacity, occupancy, next_free;
 } hashset_t;
 
 __attribute__(())

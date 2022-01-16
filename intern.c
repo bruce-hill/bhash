@@ -1,23 +1,32 @@
+// String Intern(aliz)ing Implementation
+// Strings are hashed and stored in a table.
+// When interning, if a string is already in the table, it will be
+// returned. Otherwise the original string (or a copy of it) will
+// be returned. This is useful for ensuring that each string is
+// only stored in memory once, and string equality and hashing can
+// be performed on the pointers of the strings. These strings should
+// be treated as immutable.
+// See README.md for more details on the hash table impelmentation.
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 typedef struct {
-    void *key;
+    const char *key;
     int next;
 } intern_entry_t;
 
 typedef struct {
-    size_t capacity, occupancy;
     intern_entry_t *entries;
-    int next_free;
+    int capacity, occupancy, next_free;
 } intern_t;
 
 static intern_t *interned = NULL;
 
-static void hashset_add(intern_t *h, void *key);
+static void hashset_add(intern_t *h, const char *key);
 
-static size_t hash_str(void *s)
+static size_t hash_str(const char *s)
 {
     register const unsigned char *p = (const unsigned char *)s;
     register size_t h = *p << 7;
@@ -25,7 +34,10 @@ static size_t hash_str(void *s)
     while (*p) {
         h = (1000003*h) ^ *p++;
         ++len;
-        if (len >= 127) break; // Optimization: only hash the first part of the string
+        if (len >= 127) {
+            len += strlen((char*)p+1);
+            break; // Optimization: only hash the first part of the string
+        }
     }
     h ^= len;
     if (h == 0) h = 1234567;
@@ -41,14 +53,14 @@ static void hashset_resize(intern_t *h, size_t new_size)
     h->next_free = (int)(new_size - 1);
     if (tmp.entries) {
         // Rehash:
-        for (size_t i = 0; i < tmp.capacity; i++)
+        for (int i = 0; i < tmp.capacity; i++)
             if (tmp.entries[i].key)
                 hashset_add(h, tmp.entries[i].key);
         free(tmp.entries);
     }
 }
 
-void *hashset_get(intern_t *h, void *key)
+static const char *hashset_get(intern_t *h, char *key)
 {
     if (h->capacity == 0) return NULL;
     int i = (int)(hash_str(key) & (h->capacity-1));
@@ -60,41 +72,7 @@ void *hashset_get(intern_t *h, void *key)
     return NULL;
 }
 
-static void *hashset_pop(intern_t *h, void *key)
-{
-    if (h->capacity == 0) return NULL;
-    int i = (int)(hash_str(key) & (h->capacity-1));
-    int prev = i;
-    while (strcmp(h->entries[i].key, key) != 0) {
-        if (h->entries[i].next == -1)
-            return NULL;
-        prev = i;
-        i = h->entries[i].next;
-    }
-
-    void *ret = h->entries[i].key;
-    if (h->entries[i].next != -1) {
-        // @prev -> def@i -> after@i2 ->... ==> @prev -> after@i ->...; NULL@i2
-        int i2 = h->entries[i].next;
-        h->entries[i] = h->entries[i2];
-        memset(&h->entries[i2], 0, sizeof(intern_entry_t));
-        if (i2 > h->next_free) h->next_free = i2;
-    } else {
-        // prev->def@i ==> prev; NULL@i
-        if (prev != i)
-            h->entries[prev].next = -1;
-        memset(&h->entries[i], 0, sizeof(intern_entry_t));
-    }
-    --h->occupancy;
-
-    // Shrink the storage if it's getting real empty:
-    if (h->occupancy > 16 && h->occupancy < h->capacity/3)
-        hashset_resize(h, h->capacity/2);
-
-    return ret;
-}
-
-static void hashset_add(intern_t *h, void *key)
+static void hashset_add(intern_t *h, const char *key)
 {
     if (h->capacity == 0) hashset_resize(h, 16);
 
@@ -141,17 +119,36 @@ static void hashset_add(intern_t *h, void *key)
     ++h->occupancy;
 }
 
-char *str_intern(char *str)
+// Variant that frees or transfers ownership of the string
+// to the interned string table. Values passed in *should*
+// be allocated by malloc() or similar and the return value
+// should *not* be freed() other than via free_interned().
+const char *str_intern_transfer(char *str)
 {
     if (!interned) interned = calloc(1, sizeof(intern_t));
 
-    char *dup = hashset_get(interned, str);
+    const char *dup = hashset_get(interned, str);
     if (dup) {
         free(str);
         return dup;
     }
     hashset_add(interned, str);
-    return str;
+    return (const char*)str;
+}
+
+// Variant that allocates a copy of the given string if it
+// is not already intered. If a value is passed in that is
+// dynamically allocated, you are in charge of free()ing it
+// yourself.
+const char *str_intern(char *str)
+{
+    if (!interned) interned = calloc(1, sizeof(intern_t));
+
+    const char *dup = hashset_get(interned, str);
+    if (dup) return dup;
+    str = strdup(str);
+    hashset_add(interned, str);
+    return (const char*)str;
 }
 
 void free_interned(void)
@@ -159,7 +156,7 @@ void free_interned(void)
     if (interned == NULL) return;
     for (int i = 0; i < interned->capacity; i++) {
         if (interned->entries[i].key)
-            free(interned->entries[i].key);
+            free((char*)interned->entries[i].key);
     }
     if (interned->entries) free(interned->entries);
     free(interned);

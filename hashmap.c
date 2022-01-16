@@ -1,3 +1,12 @@
+// Hash Map (aka Dictionary) Implementation
+// Keys are pointers, and entries are stored in an array.
+// If you want to use strings as pointers, you can intern the strings so
+// that each unique string has a unique pointer.
+// If you want to use numbers as pointers, you can cast them to pointers.
+// The hash insertion/lookup implementation is based on Lua's tables,
+// which use a chained scatter with Brent's variation.
+// See README.md for more details.
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

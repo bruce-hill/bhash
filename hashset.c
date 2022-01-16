@@ -1,3 +1,12 @@
+// Hash Set Implementation
+// Keys are pointers, and entries are stored in an array.
+// If you want to use strings as pointers, you can intern the strings so
+// that each unique string has a unique pointer.
+// If you want to use numbers as pointers, you can cast them to pointers.
+// The hash insertion/lookup implementation is based on Lua's tables,
+// which use a chained scatter with Brent's variation.
+// See README.md for more details.
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,7 +29,7 @@ static void hashset_resize(hashset_t *h, size_t new_size)
     h->next_free = (int)(new_size - 1);
     if (tmp.entries) {
         // Rehash:
-        for (size_t i = 0; i < tmp.capacity; i++)
+        for (int i = 0; i < tmp.capacity; i++)
             if (tmp.entries[i].key)
                 hashset_add(h, tmp.entries[i].key);
         free(tmp.entries);
