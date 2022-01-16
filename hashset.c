@@ -15,7 +15,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
-// #include <stdio.h>
 
 #include "hashset.h"
 
@@ -139,6 +138,26 @@ bool hashset_add(hashset_t *h, void *item)
     }
     ++h->occupancy;
     return true;
+}
+
+void *hashset_next(hashset_t *h, void *item)
+{
+    if (h->capacity == 0) return NULL;
+    int i = 0;
+    if (item) {
+        i = (int)(hash_pointer(item) & (h->capacity-1));
+        if (!h->entries[i].item) {
+            i = 0;
+        } else {
+            while (item != h->entries[i].item && h->entries[i].next != -1)
+                i = h->entries[i].next;
+            ++i;
+        }
+    }
+    for (; i < h->capacity; i++)
+        if (h->entries[i].item) return h->entries[i].item;
+
+    return NULL;
 }
 
 void free_hash(hashset_t **h)

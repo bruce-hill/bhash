@@ -23,6 +23,7 @@ hashmap_t *new_hashmap(void);
 void *hashmap_get(hashmap_t *h, void *key);
 void *hashmap_pop(hashmap_t *h, void *key);
 void *hashmap_set(hashmap_t *h, void *key, void *value);
+void *hashmap_next(hashmap_t *h, void *key);
 void free_hashmap(hashmap_t **h);
 ```
 
@@ -36,6 +37,7 @@ hashset_t *new_hashset(void);
 bool hashset_contains(hashset_t *h, void *item);
 bool hashset_remove(hashset_t *h, void *item);
 bool hashset_add(hashset_t *h, void *item);
+void *hashset_next(hashset_t *h, void *item);
 void free_hashset(hashset_t **h);
 ```
 

@@ -12,9 +12,8 @@
 // which use a chained scatter with Brent's variation.
 // See README.md for more details.
 
-#include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
+#include <string.h>
 
 #include "hashmap.h"
 
@@ -146,6 +145,26 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
         }
     }
     ++h->occupancy;
+    return NULL;
+}
+
+void *hashmap_next(hashmap_t *h, void *key)
+{
+    if (h->capacity == 0) return NULL;
+    int i = 0;
+    if (key) {
+        i = (int)(hash_pointer(key) & (h->capacity-1));
+        if (!h->entries[i].key) {
+            i = 0;
+        } else {
+            while (key != h->entries[i].key && h->entries[i].next != -1)
+                i = h->entries[i].next;
+            ++i;
+        }
+    }
+    for (; i < h->capacity; i++)
+        if (h->entries[i].key) return h->entries[i].key;
+
     return NULL;
 }
 

@@ -29,6 +29,9 @@ bool hashset_remove(hashset_t *h, void *item);
 // Add an item to the hash set (return true if it was added or false if it was already present)
 __attribute__((nonnull(1,2)))
 bool hashset_add(hashset_t *h, void *item);
+// Get the item after the given item (or NULL to get the first item)
+__attribute__((nonnull(1)))
+void *hashset_next(hashset_t *h, void *key);
 // Free the memory associated with the hash set (items in the set are not freed)
 __attribute__((nonnull))
 void free_hashset(hashset_t **h);

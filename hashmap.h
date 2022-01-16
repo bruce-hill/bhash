@@ -5,9 +5,6 @@
 
 #pragma once
 
-#include <stdbool.h>
-#include <string.h>
-
 typedef struct {
     void *key, *value;
     int next;
@@ -30,6 +27,9 @@ void *hashmap_pop(hashmap_t *h, void *key);
 // Store a key/value pair in the hash map and return the previous value (if any)
 __attribute__((nonnull(1,2,3)))
 void *hashmap_set(hashmap_t *h, void *key, void *value);
+// Get the key after the given key (or NULL to get the first key)
+__attribute__((nonnull(1)))
+void *hashmap_next(hashmap_t *h, void *key);
 // Deallocate the memory associated with the hash map (individual entries are not freed)
 __attribute__((nonnull))
 void free_hashmap(hashmap_t **h);
