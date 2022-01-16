@@ -1,3 +1,8 @@
+// hashset.c - C Hash Set Library
+// Copyright 2022 Bruce Hill
+// Provided under the MIT license with the Commons Clause
+// See included LICENSE for details.
+
 // Hash Set Implementation
 // Items are pointers, and entries are stored in an array.
 // If you want to use strings as pointers, you can intern the strings so

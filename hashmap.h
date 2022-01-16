@@ -1,5 +1,9 @@
-#ifndef FILE__HASHTABLE_H
-#define FILE__HASHTABLE_H
+// hashmap.h - C Hash Map Library
+// Copyright 2022 Bruce Hill
+// Provided under the MIT license with the Commons Clause
+// See included LICENSE for details.
+
+#pragma once
 
 #include <stdbool.h>
 #include <string.h>
@@ -30,5 +34,4 @@ void *hashmap_set(hashmap_t *h, void *key, void *value);
 __attribute__((nonnull))
 void free_hashmap(hashmap_t **h);
 
-#endif
 // vim: ts=4 sw=0 et cino=L2,l1,(0,W4,m1

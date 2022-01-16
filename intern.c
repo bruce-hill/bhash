@@ -1,3 +1,8 @@
+// intern.c - C String Interning Library
+// Copyright 2022 Bruce Hill
+// Provided under the MIT license with the Commons Clause
+// See included LICENSE for details.
+
 // String Intern(aliz)ing Implementation
 // Strings are hashed and stored in a table.
 // When interning, if a string is already in the table, it will be

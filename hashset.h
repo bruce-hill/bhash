@@ -1,3 +1,8 @@
+// hashset.h - C Hash Set Library
+// Copyright 2022 Bruce Hill
+// Provided under the MIT license with the Commons Clause
+// See included LICENSE for details.
+
 #pragma once
 
 #include <stdbool.h>

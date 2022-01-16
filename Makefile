@@ -1,3 +1,5 @@
+NAME=bhash
+PREFIX=/usr/local
 CC=cc
 CFLAGS=-std=c99 -Werror -D_XOPEN_SOURCE=700 -D_POSIX_C_SOURCE=200809L -flto
 CWARN=-Wall -Wextra
@@ -18,10 +20,27 @@ G=
 O=-O3
 ALL_FLAGS=$(CFLAGS) $(OSFLAGS) $(EXTRA) $(CWARN) $(G) $(O)
 
+LIBFILE=lib$(NAME).a
 CFILES=hashset.c hashmap.c intern.c
 OBJFILES=$(CFILES:.c=.o)
 
-all: $(OBJFILES)
+all: $(LIBFILE)
+
+clean:
+	rm -f $(LIBFILE) $(OBJFILES)
+
+$(LIBFILE): $(OBJFILES)
+	ar -cvq $@ $^
 
 %.o: %.c %.h
 	$(CC) -c $(ALL_FLAGS) -o $@ $<
+
+install: $(LIBFILE) bhash.h
+	mkdir -p -m 755 "$(PREFIX)/lib" "$(PREFIX)/include"
+	cp $(LIBFILE) "$(PREFIX)/lib"
+	cp bhash.h "$(PREFIX)/include"
+
+uninstall:
+	rm -vf "$(PREFIX)/lib/$(LIBFILE)"
+
+.PHONY: all install uninstall clean

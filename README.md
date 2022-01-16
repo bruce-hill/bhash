@@ -4,10 +4,16 @@ This library provides some basic tools for working with interned strings, hash
 maps, and hash sets. The hash maps/sets both work with pointers, so it's
 recommended to use interned strings if you want to use strings as hash keys.
 
+## Usage
+
 The library is split into three separate modules that do not depend on each
 other and are each quite small and easy to drop into a project as standalones.
+The simplest option is definitely to throw in a copy of the `.h`/`.c` files you
+need and compile your program with those.
 
-## Hash Maps
+## API
+
+### Hash Maps
 
 [hashmap.h](hashmap.h) defines a hash map (aka Dict) that maps arbitrary
 pointers to other pointers. The API is as follows:
@@ -20,7 +26,7 @@ void *hashmap_set(hashmap_t *h, void *key, void *value);
 void free_hashmap(hashmap_t **h);
 ```
 
-## Hash Sets
+### Hash Sets
 
 [hashset.h](hashset.h) defines hash sets, which store unordered collections of 
 deduplicated pointers. The API is as follows:
@@ -33,7 +39,7 @@ bool hashset_add(hashset_t *h, void *item);
 void free_hashset(hashset_t **h);
 ```
 
-## String Interning
+### String Interning
 
 [intern.h](intern.h) defines a simple API for [interning
 strings](https://en.wikipedia.org/wiki/String_interning). The API is as follows:
