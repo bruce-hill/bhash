@@ -23,7 +23,7 @@ typedef struct {
 
 typedef struct {
     intern_entry_t *entries;
-    int capacity, occupancy, next_free;
+    int capacity, count, next_free;
 } intern_t;
 
 static intern_t *interned = NULL;
@@ -53,7 +53,7 @@ static void hashset_resize(intern_t *h, size_t new_size)
     intern_t tmp = *h;
     h->entries = calloc(new_size, sizeof(intern_entry_t));
     h->capacity = new_size;
-    h->occupancy = 0;
+    h->count = 0;
     h->next_free = (int)(new_size - 1);
     if (tmp.entries) {
         // Rehash:
@@ -81,7 +81,7 @@ static void hashset_add(intern_t *h, const char *key)
     if (h->capacity == 0) hashset_resize(h, 16);
 
     // Grow the storage if necessary
-    if ((h->occupancy + 1) >= h->capacity)
+    if ((h->count + 1) >= h->capacity)
         hashset_resize(h, h->capacity*2);
 
     int i = (int)(hash_str(key) & (h->capacity-1));
@@ -120,7 +120,7 @@ static void hashset_add(intern_t *h, const char *key)
             h->entries[i].next = -1;
         }
     }
-    ++h->occupancy;
+    ++h->count;
 }
 
 // Variant that frees or transfers ownership of the string

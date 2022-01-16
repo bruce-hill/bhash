@@ -12,7 +12,7 @@ typedef struct {
 
 typedef struct {
     hashmap_entry_t *entries;
-    int capacity, occupancy, next_free;
+    int capacity, count, next_free;
 } hashmap_t;
 
 // Allocate a new hash map

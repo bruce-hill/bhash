@@ -29,7 +29,7 @@ static void hashmap_resize(hashmap_t *h, size_t new_size)
     hashmap_t tmp = *h;
     h->entries = calloc(new_size, sizeof(hashmap_entry_t));
     h->capacity = new_size;
-    h->occupancy = 0;
+    h->count = 0;
     h->next_free = (int)(new_size - 1);
     if (tmp.entries) {
         // Rehash:
@@ -84,10 +84,10 @@ void *hashmap_pop(hashmap_t *h, void *key)
             h->entries[prev].next = -1;
         memset(&h->entries[i], 0, sizeof(hashmap_entry_t));
     }
-    --h->occupancy;
+    --h->count;
 
     // Shrink the storage if it's getting real empty:
-    if (h->occupancy > 16 && h->occupancy < h->capacity/3)
+    if (h->count > 16 && h->count < h->capacity/3)
         hashmap_resize(h, h->capacity/2);
 
     return ret;
@@ -98,7 +98,7 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
     if (h->capacity == 0) hashmap_resize(h, 16);
 
     // Grow the storage if necessary
-    if ((h->occupancy + 1) >= h->capacity)
+    if ((h->count + 1) >= h->capacity)
         hashmap_resize(h, h->capacity*2);
 
     int i = (int)(hash_pointer(key) & (h->capacity-1));
@@ -144,7 +144,7 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
             h->entries[i].next = -1;
         }
     }
-    ++h->occupancy;
+    ++h->count;
     return NULL;
 }
 

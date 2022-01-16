@@ -14,7 +14,7 @@ typedef struct {
 
 typedef struct {
     hashset_entry_t *entries;
-    int capacity, occupancy, next_free;
+    int capacity, count, next_free;
 } hashset_t;
 
 // Allocate a new hash set
