@@ -4,7 +4,51 @@ This library provides some basic tools for working with interned strings, hash
 maps, and hash sets. The hash maps/sets both work with pointers, so it's
 recommended to use interned strings if you want to use strings as hash keys.
 
-## Hash Table Implementation
+The library is split into three separate modules that do not depend on each
+other and are each quite small and easy to drop into a project as standalones.
+
+## Hash Maps
+
+[hashmap.h](hashmap.h) defines a hash map (aka Dict) that maps arbitrary
+pointers to other pointers. The API is as follows:
+
+```c
+hashmap_t *new_hashmap(void);
+void *hashmap_get(hashmap_t *h, void *key);
+void *hashmap_pop(hashmap_t *h, void *key);
+void *hashmap_set(hashmap_t *h, void *key, void *value);
+void free_hashmap(hashmap_t **h);
+```
+
+## Hash Sets
+
+[hashset.h](hashset.h) defines hash sets, which store unordered collections of 
+deduplicated pointers. The API is as follows:
+
+```c
+hashset_t *new_hashset(void);
+bool hashset_contains(hashset_t *h, void *item);
+bool hashset_remove(hashset_t *h, void *item);
+bool hashset_add(hashset_t *h, void *item);
+void free_hashset(hashset_t **h);
+```
+
+## String Interning
+
+[intern.h](intern.h) defines a simple API for [interning
+strings](https://en.wikipedia.org/wiki/String_interning). The API is as follows:
+
+```c
+const char *str_intern(char *str);
+const char *str_intern_transfer(char *str);
+void free_interned(void);
+```
+
+Generally speaking `str_intern_transfer()` should be used for dynamically
+allocated strings and `str_intern()` should be used if you do not want the
+library to potentially call `free()` on any values you pass in.
+
+# Hash Table Implementation
 
 The hash table implementation used here is based on Lua's tables. It uses a
 chained scatter with Brent's variant. This is a highly performant way to
