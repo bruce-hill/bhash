@@ -41,21 +41,24 @@ static void hashset_resize(hashset_t *h, size_t new_size)
     }
 }
 
-hashset_t *new_hashset(void)
+hashset_t *new_hashset(hashset_t *fallback)
 {
-    return calloc(1, sizeof(hashset_t));
+    hashset_t *h = calloc(1, sizeof(hashset_t));
+    if (h) h->fallback = fallback;
+    return h;
 }
 
 bool hashset_contains(hashset_t *h, void *item)
 {
-    if (h->capacity == 0) return false;
-    int i = (int)(hash_pointer(item) & (h->capacity-1));
-    while (i != -1 && h->entries[i].item) {
-        if (item == h->entries[i].item)
-            return true;
-        i = h->entries[i].next;
+    if (h->capacity > 0) {
+        int i = (int)(hash_pointer(item) & (h->capacity-1));
+        while (i != -1 && h->entries[i].item) {
+            if (item == h->entries[i].item)
+                return true;
+            i = h->entries[i].next;
+        }
     }
-    return false;
+    return h->fallback ? hashset_contains(h->fallback, item) : false;
 }
 
 bool hashset_remove(hashset_t *h, void *item)

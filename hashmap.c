@@ -40,22 +40,24 @@ static void hashmap_resize(hashmap_t *h, size_t new_size)
     }
 }
 
-hashmap_t *new_hashmap(void)
+hashmap_t *new_hashmap(hashmap_t *fallback)
 {
     hashmap_t *h = calloc(1, sizeof(hashmap_t));
-    if (!h) return h;
+    if (h) h->fallback = fallback;
     return h;
 }
 
 void *hashmap_get(hashmap_t *h, void *key)
 {
-    if (h->capacity == 0) return NULL;
-    int i = (int)(hash_pointer(key) & (h->capacity-1));
-    while (i != -1 && h->entries[i].key) {
-        if (key == h->entries[i].key)
-            return h->entries[i].value;
-        i = h->entries[i].next;
+    if (h->capacity > 0) {
+        int i = (int)(hash_pointer(key) & (h->capacity-1));
+        while (i != -1 && h->entries[i].key) {
+            if (key == h->entries[i].key)
+                return h->entries[i].value;
+            i = h->entries[i].next;
+        }
     }
+    if (h->fallback) return hashmap_get(h->fallback, key);
     return NULL;
 }
 

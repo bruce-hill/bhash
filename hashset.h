@@ -12,14 +12,15 @@ typedef struct {
     int next;
 } hashset_entry_t;
 
-typedef struct {
+typedef struct hashset_s {
     hashset_entry_t *entries;
+    struct hashset_s *fallback;
     int capacity, count, next_free;
 } hashset_t;
 
 // Allocate a new hash set
 __attribute__(())
-hashset_t *new_hashset(void);
+hashset_t *new_hashset(hashset_t *fallback);
 // Return whether or not the hash set contains a given item
 __attribute__((nonnull))
 bool hashset_contains(hashset_t *h, void *item);

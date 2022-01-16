@@ -18,14 +18,15 @@ typedef struct {
     int next;
 } hashmap_entry_t;
 
-typedef struct {
+typedef struct hashmap_s {
     hashmap_entry_t *entries;
+    struct hashmap_s *fallback;
     int capacity, count, next_free;
 } hashmap_t;
 
 // Allocate a new hash map
 __attribute__((nonnull))
-hashmap_t *new_hashmap(void);
+hashmap_t *new_hashmap(hashmap_t *fallback);
 // Retrieve a value from a hash map (or return NULL) if not found
 __attribute__((nonnull))
 void *hashmap_get(hashmap_t *h, void *key);
@@ -51,14 +52,15 @@ typedef struct {
     int next;
 } hashset_entry_t;
 
-typedef struct {
+typedef struct hashset_s {
     hashset_entry_t *entries;
+    struct hashset_s *fallback;
     int capacity, count, next_free;
 } hashset_t;
 
 // Allocate a new hash set
 __attribute__(())
-hashset_t *new_hashset(void);
+hashset_t *new_hashset(hashmap_t *fallback);
 // Return whether or not the hash set contains a given item
 __attribute__((nonnull))
 bool hashset_contains(hashset_t *h, void *item);

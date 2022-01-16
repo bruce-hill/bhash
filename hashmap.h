@@ -10,14 +10,15 @@ typedef struct {
     int next;
 } hashmap_entry_t;
 
-typedef struct {
+typedef struct hashmap_s {
     hashmap_entry_t *entries;
+    struct hashmap_s *fallback;
     int capacity, count, next_free;
 } hashmap_t;
 
 // Allocate a new hash map
 __attribute__((nonnull))
-hashmap_t *new_hashmap(void);
+hashmap_t *new_hashmap(hashmap_t *fallback);
 // Retrieve a value from a hash map (or return NULL) if not found
 __attribute__((nonnull))
 void *hashmap_get(hashmap_t *h, void *key);
