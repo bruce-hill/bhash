@@ -1,5 +1,5 @@
 // A simple example program that lets users store and look up hash map values.
-// Compile with `cc *.o example.c -o example` or `cc example.c -o example -lbhash`
+// Compile with `make example`
 #include <string.h>
 #include <stdio.h>
 
