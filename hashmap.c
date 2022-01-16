@@ -40,7 +40,7 @@ static void hashmap_resize(hashmap_t *h, size_t new_size)
     }
 }
 
-hashmap_t *new_hash(void)
+hashmap_t *new_hashmap(void)
 {
     hashmap_t *h = calloc(1, sizeof(hashmap_t));
     if (!h) return h;
