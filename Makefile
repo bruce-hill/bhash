@@ -35,6 +35,9 @@ $(LIBFILE): $(OBJFILES)
 %.o: %.c %.h
 	$(CC) -c $(ALL_FLAGS) -o $@ $<
 
+example: example.c $(OBJFILES)
+	$(CC) $^ -o $@
+
 install: $(LIBFILE) bhash.h
 	mkdir -p -m 755 "$(PREFIX)/lib" "$(PREFIX)/include"
 	cp $(LIBFILE) "$(PREFIX)/lib"
