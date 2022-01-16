@@ -1,5 +1,5 @@
 // Hash Set Implementation
-// Keys are pointers, and entries are stored in an array.
+// Items are pointers, and entries are stored in an array.
 // If you want to use strings as pointers, you can intern the strings so
 // that each unique string has a unique pointer.
 // If you want to use numbers as pointers, you can cast them to pointers.
@@ -7,9 +7,10 @@
 // which use a chained scatter with Brent's variation.
 // See README.md for more details.
 
+#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
+// #include <stdio.h>
 
 #include "hashset.h"
 
@@ -30,8 +31,8 @@ static void hashset_resize(hashset_t *h, size_t new_size)
     if (tmp.entries) {
         // Rehash:
         for (int i = 0; i < tmp.capacity; i++)
-            if (tmp.entries[i].key)
-                hashset_add(h, tmp.entries[i].key);
+            if (tmp.entries[i].item)
+                hashset_add(h, tmp.entries[i].item);
         free(tmp.entries);
     }
 }
@@ -41,31 +42,30 @@ hashset_t *new_hashset(void)
     return calloc(1, sizeof(hashset_t));
 }
 
-void *hashset_get(hashset_t *h, void *key)
+bool hashset_contains(hashset_t *h, void *item)
 {
-    if (h->capacity == 0) return NULL;
-    int i = (int)(hash_pointer(key) & (h->capacity-1));
-    while (i != -1 && h->entries[i].key) {
-        if (key == h->entries[i].key)
-            return h->entries[i].key;
+    if (h->capacity == 0) return false;
+    int i = (int)(hash_pointer(item) & (h->capacity-1));
+    while (i != -1 && h->entries[i].item) {
+        if (item == h->entries[i].item)
+            return true;
         i = h->entries[i].next;
     }
-    return NULL;
+    return false;
 }
 
-void *hashset_pop(hashset_t *h, void *key)
+bool hashset_remove(hashset_t *h, void *item)
 {
-    if (h->capacity == 0) return NULL;
-    int i = (int)(hash_pointer(key) & (h->capacity-1));
+    if (h->capacity == 0) return false;
+    int i = (int)(hash_pointer(item) & (h->capacity-1));
     int prev = i;
-    while (h->entries[i].key != key) {
+    while (h->entries[i].item != item) {
         if (h->entries[i].next == -1)
-            return NULL;
+            return false;
         prev = i;
         i = h->entries[i].next;
     }
 
-    void *ret = h->entries[i].key;
     if (h->entries[i].next != -1) {
         // @prev -> def@i -> after@i2 ->... ==> @prev -> after@i ->...; NULL@i2
         int i2 = h->entries[i].next;
@@ -84,10 +84,10 @@ void *hashset_pop(hashset_t *h, void *key)
     if (h->occupancy > 16 && h->occupancy < h->capacity/3)
         hashset_resize(h, h->capacity/2);
 
-    return ret;
+    return true;
 }
 
-void hashset_add(hashset_t *h, void *key)
+bool hashset_add(hashset_t *h, void *item)
 {
     if (h->capacity == 0) hashset_resize(h, 16);
 
@@ -95,28 +95,28 @@ void hashset_add(hashset_t *h, void *key)
     if ((h->occupancy + 1) >= h->capacity)
         hashset_resize(h, h->capacity*2);
 
-    int i = (int)(hash_pointer(key) & (h->capacity-1));
-    if (h->entries[i].key == NULL) { // No collision
-        h->entries[i].key = key;
+    int i = (int)(hash_pointer(item) & (h->capacity-1));
+    if (h->entries[i].item == NULL) { // No collision
+        h->entries[i].item = item;
         h->entries[i].next = -1;
-        return;
+        return true;
     } else {
         for (int j = i; j != -1; j = h->entries[j].next) {
-            if (h->entries[j].key == key)
-                return;
+            if (h->entries[j].item == item)
+                return false;
         }
 
-        while (h->entries[h->next_free].key) {
+        while (h->entries[h->next_free].item) {
             if (h->next_free <= 0) h->next_free = (int)(h->capacity - 1);
             else --h->next_free;
         }
         int free = h->next_free;
 
-        int i2 = (int)(hash_pointer(h->entries[i].key) & (h->capacity-1));
+        int i2 = (int)(hash_pointer(h->entries[i].item) & (h->capacity-1));
         if (i2 == i) { // Collision with element in its main position
             // Before: colliding@i -> next
             // After:  colliding@i -> noob@free -> next
-            h->entries[free].key = key;
+            h->entries[free].item = item;
             h->entries[free].next = h->entries[i].next;
             h->entries[i].next = free;
         } else { // Collision with element in a chain
@@ -128,11 +128,12 @@ void hashset_add(hashset_t *h, void *key)
             // After:  _@i2 ->...-> prev@prev -> colliding@free -> next; noob@i
             h->entries[prev].next = free;
             h->entries[free] = h->entries[i];
-            h->entries[i].key = key;
+            h->entries[i].item = item;
             h->entries[i].next = -1;
         }
     }
     ++h->occupancy;
+    return true;
 }
 
 void free_hash(hashset_t **h)

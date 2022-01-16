@@ -14,14 +14,19 @@ typedef struct {
     int capacity, occupancy, next_free;
 } hashmap_t;
 
+// Allocate a new hash map
 __attribute__((nonnull))
 hashmap_t *new_hashmap(void);
+// Retrieve a value from a hash map (or return NULL) if not found
 __attribute__((nonnull))
 void *hashmap_get(hashmap_t *h, void *key);
+// Remove and return a value from a hash map (or return NULL) if not found
 __attribute__((nonnull(1,2)))
 void *hashmap_pop(hashmap_t *h, void *key);
+// Store a key/value pair in the hash map and return the previous value (if any)
 __attribute__((nonnull(1,2,3)))
 void *hashmap_set(hashmap_t *h, void *key, void *value);
+// Deallocate the memory associated with the hash map (individual entries are not freed)
 __attribute__((nonnull))
 void free_hashmap(hashmap_t **h);
 
