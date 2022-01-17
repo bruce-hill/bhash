@@ -41,9 +41,9 @@ example: example.c $(OBJFILES)
 install: $(LIBFILE) bhash.h
 	mkdir -p -m 755 "$(PREFIX)/lib" "$(PREFIX)/include"
 	cp $(LIBFILE) "$(PREFIX)/lib"
-	cp bhash.h "$(PREFIX)/include"
+	cp bhash.h "$(PREFIX)/include/$(NAME).h"
 
 uninstall:
-	rm -vf "$(PREFIX)/lib/$(LIBFILE)"
+	rm -vf "$(PREFIX)/lib/$(LIBFILE)" "$(PREFIX)/include/$(NAME).h"
 
 .PHONY: all install uninstall clean
