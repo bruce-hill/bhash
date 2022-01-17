@@ -49,8 +49,8 @@ void free_hashset(hashset_t **h);
 strings](https://en.wikipedia.org/wiki/String_interning). The API is as follows:
 
 ```c
-const char *str_intern(char *str);
-const char *str_intern_transfer(char *str);
+char *str_intern(char *str);
+char *str_intern_transfer(char *str);
 void free_interned(void);
 ```
 
