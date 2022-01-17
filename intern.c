@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 typedef struct {
-    const char *key;
+    char *key;
     int next;
 } intern_entry_t;
 
@@ -28,11 +28,11 @@ typedef struct {
 
 static intern_t *interned = NULL;
 
-static void hashset_add(intern_t *h, const char *key);
+static void hashset_add(intern_t *h, char *key);
 
-static size_t hash_str(const char *s)
+static size_t hash_str(char *s)
 {
-    register const unsigned char *p = (const unsigned char *)s;
+    register unsigned char *p = (unsigned char *)s;
     register size_t h = (size_t)(*p << 7);
     register size_t len = 0;
     while (*p) {
@@ -64,7 +64,7 @@ static void hashset_resize(intern_t *h, int new_size)
     }
 }
 
-static const char *hashset_get(intern_t *h, char *key)
+static char *hashset_get(intern_t *h, char *key)
 {
     if (h->capacity == 0) return NULL;
     int i = (int)(hash_str(key) & (size_t)(h->capacity-1));
@@ -76,7 +76,7 @@ static const char *hashset_get(intern_t *h, char *key)
     return NULL;
 }
 
-static void hashset_add(intern_t *h, const char *key)
+static void hashset_add(intern_t *h, char *key)
 {
     if (h->capacity == 0) hashset_resize(h, 16);
 
@@ -127,32 +127,32 @@ static void hashset_add(intern_t *h, const char *key)
 // to the interned string table. Values passed in *should*
 // be allocated by malloc() or similar and the return value
 // should *not* be freed() other than via free_interned().
-const char *str_intern_transfer(char *str)
+char *str_intern_transfer(char *str)
 {
     if (!interned) interned = calloc(1, sizeof(intern_t));
 
-    const char *dup = hashset_get(interned, str);
+    char *dup = hashset_get(interned, str);
     if (dup) {
         free(str);
         return dup;
     }
     hashset_add(interned, str);
-    return (const char*)str;
+    return str;
 }
 
 // Variant that allocates a copy of the given string if it
 // is not already intered. If a value is passed in that is
 // dynamically allocated, you are in charge of free()ing it
 // yourself.
-const char *str_intern(char *str)
+char *str_intern(char *str)
 {
     if (!interned) interned = calloc(1, sizeof(intern_t));
 
-    const char *dup = hashset_get(interned, str);
+    char *dup = hashset_get(interned, str);
     if (dup) return dup;
     str = strdup(str);
     hashset_add(interned, str);
-    return (const char*)str;
+    return str;
 }
 
 void free_interned(void)
