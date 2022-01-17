@@ -24,17 +24,17 @@ int main(void)
         if (eq) { // Assign
             // Make sure strings are interned before using in the hash table:
             char *key = strndup(line, (size_t)(eq-line));
-            key = (char*)str_intern_transfer(key);
-            char *value = (char*)str_intern(eq+1);
+            key = str_intern_transfer(key);
+            char *value = str_intern(eq+1);
 
             // Store the value in the hash map:
             hashmap_set(h, key, value);
         } else {
             // Intern the key:
-            line = (char*)str_intern(line);
+            char *key = str_intern(line);
 
             // Get the value from the hash map:
-            char *result = hashmap_get(h, line);
+            char *result = hashmap_get(h, key);
             if (result) printf("%s\n", result);
             else printf("(nil)\n");
         }
