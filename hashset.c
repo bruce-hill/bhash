@@ -50,6 +50,7 @@ hashset_t *new_hashset(hashset_t *fallback)
 
 bool hashset_contains(hashset_t *h, void *item)
 {
+    if (item == NULL) return false;
     if (h->capacity > 0) {
         int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
         while (i != -1 && h->entries[i].item) {
@@ -63,7 +64,7 @@ bool hashset_contains(hashset_t *h, void *item)
 
 bool hashset_remove(hashset_t *h, void *item)
 {
-    if (h->capacity == 0) return false;
+    if (h->capacity == 0 || !item) return false;
     int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
     int prev = i;
     while (h->entries[i].item != item) {
@@ -96,6 +97,8 @@ bool hashset_remove(hashset_t *h, void *item)
 
 bool hashset_add(hashset_t *h, void *item)
 {
+    if (!item) return false;
+
     if (h->capacity == 0) hashset_resize(h, 16);
 
     // Grow the storage if necessary

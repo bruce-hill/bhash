@@ -66,7 +66,7 @@ static void hashset_resize(intern_t *h, int new_size)
 
 static char *hashset_get(intern_t *h, char *key)
 {
-    if (h->capacity == 0) return NULL;
+    if (h->capacity == 0 || !key) return NULL;
     int i = (int)(hash_str(key) & (size_t)(h->capacity-1));
     while (i != -1 && h->entries[i].key) {
         if (strcmp(key, h->entries[i].key) == 0)
@@ -78,6 +78,7 @@ static char *hashset_get(intern_t *h, char *key)
 
 static void hashset_add(intern_t *h, char *key)
 {
+    if (!key) return;
     if (h->capacity == 0) hashset_resize(h, 16);
 
     // Grow the storage if necessary
@@ -129,6 +130,7 @@ static void hashset_add(intern_t *h, char *key)
 // should *not* be freed() other than via free_interned().
 char *str_intern_transfer(char *str)
 {
+    if (!str) return NULL;
     if (!interned) interned = calloc(1, sizeof(intern_t));
 
     char *dup = hashset_get(interned, str);
@@ -146,6 +148,7 @@ char *str_intern_transfer(char *str)
 // yourself.
 char *str_intern(char *str)
 {
+    if (!str) return NULL;
     if (!interned) interned = calloc(1, sizeof(intern_t));
 
     char *dup = hashset_get(interned, str);

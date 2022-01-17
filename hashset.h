@@ -24,10 +24,10 @@ hashset_t *new_hashset(hashset_t *fallback);
 __attribute__((nonnull))
 bool hashset_contains(hashset_t *h, void *item);
 // Remove an item from the hash set (return true if was present or false otherwise)
-__attribute__((nonnull(1,2)))
+__attribute__((nonnull))
 bool hashset_remove(hashset_t *h, void *item);
 // Add an item to the hash set (return true if it was added or false if it was already present)
-__attribute__((nonnull(1,2)))
+__attribute__((nonnull))
 bool hashset_add(hashset_t *h, void *item);
 // Get the item after the given item (or NULL to get the first item)
 __attribute__((nonnull(1)))

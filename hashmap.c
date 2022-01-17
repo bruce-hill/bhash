@@ -97,6 +97,9 @@ void *hashmap_pop(hashmap_t *h, void *key)
 
 void *hashmap_set(hashmap_t *h, void *key, void *value)
 {
+    if (key == NULL) return NULL;
+    if (value == NULL) return hashmap_pop(h, key);
+
     if (h->capacity == 0) hashmap_resize(h, 16);
 
     // Grow the storage if necessary

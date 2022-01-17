@@ -30,10 +30,10 @@ hashmap_t *new_hashmap(hashmap_t *fallback);
 __attribute__((nonnull))
 void *hashmap_get(hashmap_t *h, void *key);
 // Remove and return a value from a hash map (or return NULL) if not found
-__attribute__((nonnull(1,2)))
+__attribute__((nonnull))
 void *hashmap_pop(hashmap_t *h, void *key);
 // Store a key/value pair in the hash map and return the previous value (if any)
-__attribute__((nonnull(1,2,3)))
+__attribute__((nonnull(1,2)))
 void *hashmap_set(hashmap_t *h, void *key, void *value);
 // Get the key after the given key (or NULL to get the first key)
 __attribute__((nonnull(1)))
@@ -63,10 +63,10 @@ hashset_t *new_hashset(hashmap_t *fallback);
 __attribute__((nonnull))
 bool hashset_contains(hashset_t *h, void *item);
 // Remove an item from the hash set (return true if was present or false otherwise)
-__attribute__((nonnull(1,2)))
+__attribute__((nonnull))
 bool hashset_remove(hashset_t *h, void *item);
 // Add an item to the hash set (return true if it was added or false if it was already present)
-__attribute__((nonnull(1,2)))
+__attribute__((nonnull))
 bool hashset_add(hashset_t *h, void *item);
 // Get the item after the given item (or NULL to get the first item)
 __attribute__((nonnull(1)))
