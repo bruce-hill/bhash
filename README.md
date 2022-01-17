@@ -17,7 +17,8 @@ other and are each quite small and easy to drop into a project as standalones.
 The simplest option is definitely to throw in a copy of the `.h`/`.c` files you
 need and compile your program with those.
 
-See [example.c](example.c) for some basic examples of how to use the library.
+See [example.c](example.c) for some basic examples of how to use the library
+(it can be compiled with `make example`).
 
 ## API
 
