@@ -22,9 +22,10 @@ int main(void)
 
         char *eq = strchr(line, '=');
         if (eq) { // Assign
-            // Make sure strings are interned before using in the hash table:
             char *key = strndup(line, (size_t)(eq-line));
+            // Use str_intern_transfer() here so we don't have to free(key) afterwards
             key = str_intern_transfer(key);
+            // Use str_intern() here since this is part of `line` and we don't want it freed
             char *value = str_intern(eq+1);
 
             // Store the value in the hash map:
