@@ -17,9 +17,10 @@ typedef struct hashmap_s {
 } hashmap_t;
 
 // Allocate a new hash map
+__attribute__((warn_unused_result))
 hashmap_t *new_hashmap(hashmap_t *fallback);
 // Retrieve a value from a hash map (or return NULL) if not found
-__attribute__((nonnull))
+__attribute__((nonnull,warn_unused_result))
 void *hashmap_get(hashmap_t *h, void *key);
 // Remove and return a value from a hash map (or return NULL) if not found
 __attribute__((nonnull))
@@ -28,7 +29,7 @@ void *hashmap_pop(hashmap_t *h, void *key);
 __attribute__((nonnull(1,2)))
 void *hashmap_set(hashmap_t *h, void *key, void *value);
 // Get the key after the given key (or NULL to get the first key)
-__attribute__((nonnull(1)))
+__attribute__((nonnull(1),warn_unused_result))
 void *hashmap_next(hashmap_t *h, void *key);
 // Deallocate the memory associated with the hash map (individual entries are not freed)
 __attribute__((nonnull))

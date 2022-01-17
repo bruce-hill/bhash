@@ -19,9 +19,10 @@ typedef struct hashset_s {
 } hashset_t;
 
 // Allocate a new hash set
+__attribute__((warn_unused_result))
 hashset_t *new_hashset(hashset_t *fallback);
 // Return whether or not the hash set contains a given item
-__attribute__((nonnull))
+__attribute__((nonnull,warn_unused_result))
 bool hashset_contains(hashset_t *h, void *item);
 // Remove an item from the hash set (return true if was present or false otherwise)
 __attribute__((nonnull))
@@ -30,7 +31,7 @@ bool hashset_remove(hashset_t *h, void *item);
 __attribute__((nonnull))
 bool hashset_add(hashset_t *h, void *item);
 // Get the item after the given item (or NULL to get the first item)
-__attribute__((nonnull(1)))
+__attribute__((nonnull(1),warn_unused_result))
 void *hashset_next(hashset_t *h, void *key);
 // Free the memory associated with the hash set (items in the set are not freed)
 __attribute__((nonnull))

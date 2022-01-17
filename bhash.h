@@ -25,9 +25,10 @@ typedef struct hashmap_s {
 } hashmap_t;
 
 // Allocate a new hash map
+__attribute__((warn_unused_result))
 hashmap_t *new_hashmap(hashmap_t *fallback);
 // Retrieve a value from a hash map (or return NULL) if not found
-__attribute__((nonnull))
+__attribute__((nonnull,warn_unused_result))
 void *hashmap_get(hashmap_t *h, void *key);
 // Remove and return a value from a hash map (or return NULL) if not found
 __attribute__((nonnull))
@@ -36,7 +37,7 @@ void *hashmap_pop(hashmap_t *h, void *key);
 __attribute__((nonnull(1,2)))
 void *hashmap_set(hashmap_t *h, void *key, void *value);
 // Get the key after the given key (or NULL to get the first key)
-__attribute__((nonnull(1)))
+__attribute__((nonnull(1),warn_unused_result))
 void *hashmap_next(hashmap_t *h, void *key);
 // Deallocate the memory associated with the hash map (individual entries are not freed)
 __attribute__((nonnull))
@@ -58,9 +59,10 @@ typedef struct hashset_s {
 } hashset_t;
 
 // Allocate a new hash set
+__attribute__((warn_unused_result))
 hashset_t *new_hashset(hashmap_t *fallback);
 // Return whether or not the hash set contains a given item
-__attribute__((nonnull))
+__attribute__((nonnull,warn_unused_result))
 bool hashset_contains(hashset_t *h, void *item);
 // Remove an item from the hash set (return true if was present or false otherwise)
 __attribute__((nonnull))
@@ -69,7 +71,7 @@ bool hashset_remove(hashset_t *h, void *item);
 __attribute__((nonnull))
 bool hashset_add(hashset_t *h, void *item);
 // Get the item after the given item (or NULL to get the first item)
-__attribute__((nonnull(1)))
+__attribute__((nonnull(1),warn_unused_result))
 void *hashset_next(hashset_t *h, void *key);
 // Free the memory associated with the hash set (items in the set are not freed)
 __attribute__((nonnull))
@@ -81,10 +83,12 @@ void free_hashset(hashset_t **h);
 
 // Intern a string into memory.
 // If an equivalent string was already in the table, return that version, otherwise return a copy.
+__attribute__((warn_unused_result))
 char *str_intern(char *str);
 // Transfer ownership of a dynamically allocated string to the intern table.
 // If an equivalent string was already interned, free `str` and return the existing string.
 // Otherwise, store `str` in the table.
+__attribute__((warn_unused_result))
 char *str_intern_transfer(char *str);
 // Free all interned strings and the table used to track them.
 void free_interned(void);
