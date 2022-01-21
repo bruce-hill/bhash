@@ -68,7 +68,7 @@ bool hashset_remove(hashset_t *h, void *item)
     int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
     int prev = i;
     while (h->entries[i].item != item) {
-        if (h->entries[i].next == -1)
+        if (h->entries[i].item == NULL || h->entries[i].next == -1)
             return false;
         prev = i;
         i = h->entries[i].next;
