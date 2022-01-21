@@ -17,18 +17,14 @@
 #include <stdlib.h>
 
 typedef struct {
-    char *key;
+    char *str;
     int next;
 } intern_entry_t;
 
-typedef struct {
-    intern_entry_t *entries;
-    int capacity, count, next_free;
-} intern_t;
+static intern_entry_t *interned = NULL;
+static int capacity = 0, count = 0, next_free = 0;
 
-static intern_t *interned = NULL;
-
-static void hashset_add(intern_t *h, char *key);
+static void hashset_add(char *str);
 
 static size_t hash_str(char *s)
 {
@@ -48,80 +44,81 @@ static size_t hash_str(char *s)
     return h;
 }
 
-static void hashset_resize(intern_t *h, int new_size)
+static void hashset_resize(int new_size)
 {
-    intern_t tmp = *h;
-    h->entries = calloc((size_t)new_size, sizeof(intern_entry_t));
-    h->capacity = new_size;
-    h->count = 0;
-    h->next_free = new_size - 1;
-    if (tmp.entries) {
-        // Rehash:
-        for (int i = 0; i < tmp.capacity; i++)
-            if (tmp.entries[i].key)
-                hashset_add(h, tmp.entries[i].key);
-        free(tmp.entries);
+    intern_entry_t *old = interned;
+    int old_capacity = capacity;
+    interned = calloc((size_t)new_size, sizeof(intern_entry_t));
+    capacity = new_size;
+    count = 0;
+    next_free = new_size - 1;
+    // Rehash:
+    if (old) {
+        for (int i = 0; i < old_capacity; i++)
+            if (old[i].str)
+                hashset_add(old[i].str);
+        free(old);
     }
 }
 
-static char *hashset_get(intern_t *h, char *key)
+static char *hashset_get(char *str)
 {
-    if (h->capacity == 0 || !key) return NULL;
-    int i = (int)(hash_str(key) & (size_t)(h->capacity-1));
-    while (i != -1 && h->entries[i].key) {
-        if (strcmp(key, h->entries[i].key) == 0)
-            return h->entries[i].key;
-        i = h->entries[i].next;
+    if (capacity == 0 || !str) return NULL;
+    int i = (int)(hash_str(str) & (size_t)(capacity-1));
+    while (i != -1 && interned[i].str) {
+        if (strcmp(str, interned[i].str) == 0)
+            return interned[i].str;
+        i = interned[i].next;
     }
     return NULL;
 }
 
-static void hashset_add(intern_t *h, char *key)
+static void hashset_add(char *str)
 {
-    if (!key) return;
-    if (h->capacity == 0) hashset_resize(h, 16);
+    if (!str) return;
 
     // Grow the storage if necessary
-    if ((h->count + 1) >= h->capacity)
-        hashset_resize(h, h->capacity*2);
+    if (capacity == 0) hashset_resize(16);
+    else if ((count + 1) >= capacity)
+        hashset_resize(capacity*2);
 
-    int i = (int)(hash_str(key) & (size_t)(h->capacity-1));
-    if (h->entries[i].key == NULL) { // No collision
-        h->entries[i].key = key;
-        h->entries[i].next = -1;
+    int i = (int)(hash_str(str) & (size_t)(capacity-1));
+    if (interned[i].str == NULL) { // No collision
+        interned[i].str = str;
+        interned[i].next = -1;
     } else {
-        for (int j = i; j != -1; j = h->entries[j].next) {
-            if (strcmp(h->entries[j].key, key) == 0)
+        for (int j = i; j != -1; j = interned[j].next) {
+            if (strcmp(interned[j].str, str) == 0)
                 return;
         }
 
-        while (h->entries[h->next_free].key) {
-            if (h->next_free <= 0) h->next_free = (int)(h->capacity - 1);
-            else --h->next_free;
+        while (interned[next_free].str) {
+            if (next_free <= 0) next_free = (int)(capacity - 1);
+            else --next_free;
         }
-        int free = h->next_free;
+        int free = next_free;
 
-        int i2 = (int)(hash_str(h->entries[i].key) & (size_t)(h->capacity-1));
+        int i2 = (int)(hash_str(interned[i].str) & (size_t)(capacity-1));
         if (i2 == i) { // Collision with element in its main position
             // Before: colliding@i -> next
             // After:  colliding@i -> noob@free -> next
-            h->entries[free].key = key;
-            h->entries[free].next = h->entries[i].next;
-            h->entries[i].next = free;
+            interned[free].str = str;
+            interned[free].next = interned[i].next;
+            interned[i].next = free;
         } else { // Collision with element in a chain
             int prev = i2;
-            while (h->entries[prev].next != i)
-                prev = h->entries[prev].next;
+            while (interned[prev].next != i)
+                prev = interned[prev].next;
 
             // Before: _@i2 ->...-> prev@prev -> colliding@i -> next
             // After:  _@i2 ->...-> prev@prev -> colliding@free -> next; noob@i
-            h->entries[prev].next = free;
-            h->entries[free] = h->entries[i];
-            h->entries[i].key = key;
-            h->entries[i].next = -1;
+            interned[prev].next = free;
+            interned[free] = interned[i];
+            interned[i].str = str;
+            interned[i].next = -1;
         }
     }
-    ++h->count;
+    ++count;
 }
 
 // Variant that frees or transfers ownership of the string
@@ -131,14 +128,12 @@ static void hashset_add(intern_t *h, char *key)
 char *str_intern_transfer(char *str)
 {
     if (!str) return NULL;
-    if (!interned) interned = calloc(1, sizeof(intern_t));
-
-    char *dup = hashset_get(interned, str);
+    char *dup = hashset_get(str);
     if (dup) {
         free(str);
         return dup;
     }
-    hashset_add(interned, str);
+    hashset_add(str);
     return str;
 }
 
@@ -149,23 +144,20 @@ char *str_intern_transfer(char *str)
 char *str_intern(char *str)
 {
     if (!str) return NULL;
-    if (!interned) interned = calloc(1, sizeof(intern_t));
-
-    char *dup = hashset_get(interned, str);
+    char *dup = hashset_get(str);
     if (dup) return dup;
     str = strdup(str);
-    hashset_add(interned, str);
+    hashset_add(str);
     return str;
 }
 
 void free_interned(void)
 {
     if (interned == NULL) return;
-    for (int i = 0; i < interned->capacity; i++) {
-        if (interned->entries[i].key)
-            free((char*)interned->entries[i].key);
+    for (int i = 0; i < capacity; i++) {
+        if (interned[i].str)
+            free((char*)interned[i].str);
     }
-    if (interned->entries) free(interned->entries);
     free(interned);
     interned = NULL;
 }

@@ -25,86 +25,8 @@ static size_t hash_pointer(void *p)
     return (s >> 5) | (s << (sizeof(void*) - 5));
 }
 
-static void hashset_resize(hashset_t *h, int new_size)
+bool _hashset_add(hashset_t *h, void *item)
 {
-    hashset_t tmp = *h;
-    h->entries = calloc((size_t)new_size, sizeof(hashset_entry_t));
-    h->capacity = new_size;
-    h->count = 0;
-    h->next_free = new_size - 1;
-    if (tmp.entries) {
-        // Rehash:
-        for (int i = 0; i < tmp.capacity; i++)
-            if (tmp.entries[i].item)
-                hashset_add(h, tmp.entries[i].item);
-        free(tmp.entries);
-    }
-}
-
-hashset_t *new_hashset(hashset_t *fallback)
-{
-    hashset_t *h = calloc(1, sizeof(hashset_t));
-    if (h) h->fallback = fallback;
-    return h;
-}
-
-bool hashset_contains(hashset_t *h, void *item)
-{
-    if (item == NULL) return false;
-    if (h->capacity > 0) {
-        int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
-        while (i != -1 && h->entries[i].item) {
-            if (item == h->entries[i].item)
-                return true;
-            i = h->entries[i].next;
-        }
-    }
-    return h->fallback ? hashset_contains(h->fallback, item) : false;
-}
-
-bool hashset_remove(hashset_t *h, void *item)
-{
-    if (h->capacity == 0 || !item) return false;
-    int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
-    int prev = i;
-    while (h->entries[i].item != item) {
-        if (h->entries[i].next == -1)
-            return false;
-        prev = i;
-        i = h->entries[i].next;
-    }
-
-    if (h->entries[i].next != -1) {
-        // @prev -> def@i -> after@i2 ->... ==> @prev -> after@i ->...; NULL@i2
-        int i2 = h->entries[i].next;
-        h->entries[i] = h->entries[i2];
-        memset(&h->entries[i2], 0, sizeof(hashset_entry_t));
-        if (i2 > h->next_free) h->next_free = i2;
-    } else {
-        // prev->def@i ==> prev; NULL@i
-        if (prev != i)
-            h->entries[prev].next = -1;
-        memset(&h->entries[i], 0, sizeof(hashset_entry_t));
-    }
-    --h->count;
-
-    // Shrink the storage if it's getting real empty:
-    if (h->count > 16 && h->count < h->capacity/3)
-        hashset_resize(h, h->capacity/2);
-
-    return true;
-}
-
-bool hashset_add(hashset_t *h, void *item)
-{
-    if (!item) return false;
-
-    if (h->capacity == 0) hashset_resize(h, 16);
-
-    // Grow the storage if necessary
-    if ((h->count + 1) >= h->capacity)
-        hashset_resize(h, h->capacity*2);
-
     int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
     if (h->entries[i].item == NULL) { // No collision
         h->entries[i].item = item;
@@ -146,6 +68,85 @@ bool hashset_add(hashset_t *h, void *item)
     return true;
 }
 
+static void hashset_resize(hashset_t **h, int new_size)
+{
+    hashset_t *old = *h;
+    hashset_t *new = calloc(sizeof(hashset_t) + (size_t)(new_size-1)*sizeof(hashset_entry_t), 1);
+    new->capacity = new_size;
+    new->count = 0;
+    new->next_free = new_size - 1;
+    // Rehash:
+    if (old) {
+        for (int i = 0; i < old->capacity; i++)
+            if (old->entries[i].item)
+                _hashset_add(new, old->entries[i].item);
+        free(old);
+    }
+    *h = new;
+}
+
+hashset_t *new_hashset(hashset_t *fallback)
+{
+    hashset_t *h = calloc(1, sizeof(hashset_t));
+    if (h) h->fallback = fallback;
+    return h;
+}
+
+bool hashset_contains(hashset_t *h, void *item)
+{
+    if (item == NULL) return false;
+    if (h->capacity > 0) {
+        int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
+        while (i != -1 && h->entries[i].item) {
+            if (item == h->entries[i].item)
+                return true;
+            i = h->entries[i].next;
+        }
+    }
+    return h->fallback ? hashset_contains(h->fallback, item) : false;
+}
+
+bool hashset_remove(hashset_t **_h, void *item)
+{
+    hashset_t *h = *_h;
+    if (h->capacity == 0 || !item) return false;
+    int i = (int)(hash_pointer(item) & (size_t)(h->capacity-1));
+    int prev = i;
+    while (h->entries[i].item != item) {
+        if (h->entries[i].next == -1)
+            return false;
+        prev = i;
+        i = h->entries[i].next;
+    }
+
+    if (h->entries[i].next != -1) {
+        // @prev -> def@i -> after@i2 ->... ==> @prev -> after@i ->...; NULL@i2
+        int i2 = h->entries[i].next;
+        h->entries[i] = h->entries[i2];
+        memset(&h->entries[i2], 0, sizeof(hashset_entry_t));
+        if (i2 > h->next_free) h->next_free = i2;
+    } else {
+        // prev->def@i ==> prev; NULL@i
+        if (prev != i)
+            h->entries[prev].next = -1;
+        memset(&h->entries[i], 0, sizeof(hashset_entry_t));
+    }
+    --h->count;
+
+    // Shrink the storage if it's getting real empty:
+    if (h->count > 16 && h->count < h->capacity/3)
+        hashset_resize(_h, h->capacity/2);
+
+    return true;
+}
+
+bool hashset_add(hashset_t **h, void *item)
+{
+    if (!item) return false;
+    if ((*h)->capacity == 0) hashset_resize(h, 16);
+    return _hashset_add(*h, item);
+}
+
 void *hashset_next(hashset_t *h, void *item)
 {
     if (h->capacity == 0) return NULL;
@@ -169,7 +170,6 @@ void *hashset_next(hashset_t *h, void *item)
 void free_hash(hashset_t **h)
 {
     if (*h == NULL) return;
-    if ((*h)->entries) free((*h)->entries);
     free(*h);
     *h = NULL;
 }

@@ -24,88 +24,8 @@ static inline size_t hash_pointer(void *p)
     return (s >> 5) | (s << (sizeof(void*) - 5));
 }
 
-static void hashmap_resize(hashmap_t *h, int new_size)
+static void *_hashmap_set(hashmap_t *h, void *key, void *value)
 {
-    hashmap_t tmp = *h;
-    h->entries = calloc((size_t)new_size, sizeof(hashmap_entry_t));
-    h->capacity = new_size;
-    h->count = 0;
-    h->next_free = new_size - 1;
-    if (tmp.entries) {
-        // Rehash:
-        for (int i = 0; i < tmp.capacity; i++)
-            if (tmp.entries[i].key)
-                hashmap_set(h, tmp.entries[i].key, tmp.entries[i].value);
-        free(tmp.entries);
-    }
-}
-
-hashmap_t *new_hashmap(hashmap_t *fallback)
-{
-    hashmap_t *h = calloc(1, sizeof(hashmap_t));
-    if (h) h->fallback = fallback;
-    return h;
-}
-
-void *hashmap_get(hashmap_t *h, void *key)
-{
-    if (h->capacity > 0) {
-        int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
-        while (i != -1 && h->entries[i].key) {
-            if (key == h->entries[i].key)
-                return h->entries[i].value;
-            i = h->entries[i].next;
-        }
-    }
-    if (h->fallback) return hashmap_get(h->fallback, key);
-    return NULL;
-}
-
-void *hashmap_pop(hashmap_t *h, void *key)
-{
-    if (h->capacity == 0) return NULL;
-    int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
-    int prev = i;
-    while (h->entries[i].key != key) {
-        if (h->entries[i].next == -1)
-            return NULL;
-        prev = i;
-        i = h->entries[i].next;
-    }
-
-    void *ret = h->entries[i].value;
-    if (h->entries[i].next != -1) {
-        // @prev -> def@i -> after@i2 ->... ==> @prev -> after@i ->...; NULL@i2
-        int i2 = h->entries[i].next;
-        h->entries[i] = h->entries[i2];
-        memset(&h->entries[i2], 0, sizeof(hashmap_entry_t));
-        if (i2 > h->next_free) h->next_free = i2;
-    } else {
-        // prev->def@i ==> prev; NULL@i
-        if (prev != i)
-            h->entries[prev].next = -1;
-        memset(&h->entries[i], 0, sizeof(hashmap_entry_t));
-    }
-    --h->count;
-
-    // Shrink the storage if it's getting real empty:
-    if (h->count > 16 && h->count < h->capacity/3)
-        hashmap_resize(h, h->capacity/2);
-
-    return ret;
-}
-
-void *hashmap_set(hashmap_t *h, void *key, void *value)
-{
-    if (key == NULL) return NULL;
-    if (value == NULL) return hashmap_pop(h, key);
-
-    if (h->capacity == 0) hashmap_resize(h, 16);
-
-    // Grow the storage if necessary
-    if ((h->count + 1) >= h->capacity)
-        hashmap_resize(h, h->capacity*2);
-
     int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
     if (h->entries[i].key == NULL) { // No collision
         h->entries[i].key = key;
@@ -115,7 +35,6 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
         for (int j = i; j != -1; j = h->entries[j].next) {
             if (h->entries[j].key == key) {
                 void *ret = h->entries[j].value;
-                h->entries[j].key = key;
                 h->entries[j].value = value;
                 return ret;
             }
@@ -153,6 +72,87 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
     return NULL;
 }
 
+static void hashmap_resize(hashmap_t **h, int new_size)
+{
+    hashmap_t *old = *h;
+    hashmap_t *new = calloc(sizeof(hashmap_t) + (size_t)(new_size-1)*sizeof(hashmap_entry_t), 1);
+    new->capacity = new_size;
+    new->count = 0;
+    new->next_free = new_size - 1;
+    // Rehash:
+    if (old) {
+        for (int i = 0; i < old->capacity; i++)
+            if (old->entries[i].key)
+                _hashmap_set(new, old->entries[i].key, old->entries[i].value);
+        free(old);
+    }
+    *h = new;
+}
+
+hashmap_t *new_hashmap(hashmap_t *fallback)
+{
+    hashmap_t *h = calloc(1, sizeof(hashmap_t));
+    if (h) h->fallback = fallback;
+    return h;
+}
+
+void *hashmap_get(hashmap_t *h, void *key)
+{
+    if (h->capacity > 0) {
+        int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
+        while (i != -1 && h->entries[i].key) {
+            if (key == h->entries[i].key)
+                return h->entries[i].value;
+            i = h->entries[i].next;
+        }
+    }
+    if (h->fallback) return hashmap_get(h->fallback, key);
+    return NULL;
+}
+
+void *hashmap_pop(hashmap_t **_h, void *key)
+{
+    hashmap_t *h = *_h;
+    if (h->capacity == 0) return NULL;
+    int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
+    int prev = i;
+    while (h->entries[i].key != key) {
+        if (h->entries[i].next == -1)
+            return NULL;
+        prev = i;
+        i = h->entries[i].next;
+    }
+
+    void *ret = h->entries[i].value;
+    if (h->entries[i].next != -1) {
+        // @prev -> def@i -> after@i2 ->... ==> @prev -> after@i ->...; NULL@i2
+        int i2 = h->entries[i].next;
+        h->entries[i] = h->entries[i2];
+        memset(&h->entries[i2], 0, sizeof(hashmap_entry_t));
+        if (i2 > h->next_free) h->next_free = i2;
+    } else {
+        // prev->def@i ==> prev; NULL@i
+        if (prev != i)
+            h->entries[prev].next = -1;
+        memset(&h->entries[i], 0, sizeof(hashmap_entry_t));
+    }
+    --h->count;
+
+    // Shrink the storage if it's getting real empty:
+    if (h->count > 16 && h->count < h->capacity/3)
+        hashmap_resize(_h, h->capacity/2);
+
+    return ret;
+}
+
+void *hashmap_set(hashmap_t **h, void *key, void *value)
+{
+    if (key == NULL) return NULL;
+    if (value == NULL) return hashmap_pop(h, key);
+    if ((*h)->capacity == 0) hashmap_resize(h, 16);
+    return _hashmap_set(*h, key, value);
+}
+
 void *hashmap_next(hashmap_t *h, void *key)
 {
     if (h->capacity == 0) return NULL;
@@ -176,7 +176,6 @@ void *hashmap_next(hashmap_t *h, void *key)
 void free_hashmap(hashmap_t **h)
 {
     if (*h == NULL) return;
-    if ((*h)->entries) free((*h)->entries);
     free(*h);
     *h = NULL;
 }

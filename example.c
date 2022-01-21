@@ -29,7 +29,7 @@ int main(void)
             char *value = str_intern(eq+1);
 
             // Store the value in the hash map:
-            hashmap_set(h, key, value);
+            hashmap_set(&h, key, value);
         } else {
             // Intern the key:
             char *key = str_intern(line);

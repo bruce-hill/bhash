@@ -11,9 +11,9 @@ typedef struct {
 } hashmap_entry_t;
 
 typedef struct hashmap_s {
-    hashmap_entry_t *entries;
+    int count, capacity, next_free;
     struct hashmap_s *fallback;
-    int capacity, count, next_free;
+    hashmap_entry_t entries[1];
 } hashmap_t;
 
 // Allocate a new hash map
@@ -24,10 +24,10 @@ __attribute__((nonnull,warn_unused_result))
 void *hashmap_get(hashmap_t *h, void *key);
 // Remove and return a value from a hash map (or return NULL) if not found
 __attribute__((nonnull))
-void *hashmap_pop(hashmap_t *h, void *key);
+void *hashmap_pop(hashmap_t **h, void *key);
 // Store a key/value pair in the hash map and return the previous value (if any)
 __attribute__((nonnull(1,2)))
-void *hashmap_set(hashmap_t *h, void *key, void *value);
+void *hashmap_set(hashmap_t **h, void *key, void *value);
 // Get the key after the given key (or NULL to get the first key)
 __attribute__((nonnull(1),warn_unused_result))
 void *hashmap_next(hashmap_t *h, void *key);

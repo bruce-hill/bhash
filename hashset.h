@@ -13,9 +13,9 @@ typedef struct {
 } hashset_entry_t;
 
 typedef struct hashset_s {
-    hashset_entry_t *entries;
+    int count, capacity, next_free;
     struct hashset_s *fallback;
-    int capacity, count, next_free;
+    hashset_entry_t entries[1];
 } hashset_t;
 
 // Allocate a new hash set
@@ -26,10 +26,10 @@ __attribute__((nonnull,warn_unused_result))
 bool hashset_contains(hashset_t *h, void *item);
 // Remove an item from the hash set (return true if was present or false otherwise)
 __attribute__((nonnull))
-bool hashset_remove(hashset_t *h, void *item);
+bool hashset_remove(hashset_t **h, void *item);
 // Add an item to the hash set (return true if it was added or false if it was already present)
 __attribute__((nonnull))
-bool hashset_add(hashset_t *h, void *item);
+bool hashset_add(hashset_t **h, void *item);
 // Get the item after the given item (or NULL to get the first item)
 __attribute__((nonnull(1),warn_unused_result))
 void *hashset_next(hashset_t *h, void *key);
