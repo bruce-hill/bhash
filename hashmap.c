@@ -67,7 +67,7 @@ void *hashmap_pop(hashmap_t *h, void *key)
     int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
     int prev = i;
     while (h->entries[i].key != key) {
-        if (h->entries[i].next == -1)
+        if (!h->entries[i].key || h->entries[i].next == -1)
             return NULL;
         prev = i;
         i = h->entries[i].next;
