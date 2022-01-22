@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hashmap.h"
+#include "bhash.h"
 
 static inline size_t hash_pointer(void *p)
 {
@@ -26,16 +26,16 @@ static inline size_t hash_pointer(void *p)
 
 static void hashmap_resize(hashmap_t *h, int new_size)
 {
-    hashmap_t tmp = *h;
+    hashmap_t old = *h;
     h->entries = calloc((size_t)new_size, sizeof(hashmap_entry_t));
     h->capacity = new_size;
     h->lastfree = &h->entries[new_size - 1];
-    if (tmp.entries) {
+    if (old.entries) {
         // Rehash:
-        for (int i = 0; i < tmp.capacity; i++)
-            if (tmp.entries[i].key)
-                hashmap_set(h, tmp.entries[i].key, tmp.entries[i].value);
-        free(tmp.entries);
+        for (int i = 0; i < old.capacity; i++)
+            if (old.entries[i].key)
+                (void)hashmap_set(h, old.entries[i].key, old.entries[i].value);
+        free(old.entries);
     }
 }
 
@@ -50,7 +50,7 @@ void *hashmap_get(hashmap_t *h, void *key)
 {
     if (h->capacity > 0) {
         int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
-        for (hashmap_entry_t *e = &h->entries[i]; e; e = e->next) {
+        for (hashmap_entry_t *e = &h->entries[i]; e && e->key; e = e->next) {
             if (e->key == key)
                 return e->value;
         }
@@ -68,18 +68,26 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
   retry:;
     int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
     hashmap_entry_t *collision = &h->entries[i];
-    if (collision->key == key) { // Update value
-        void *old_value = collision->value;
-        h->count += (value ? 1 : 0) + (collision->value ? -1 : 0);
-        collision->value = value;
-        return old_value;
-    } else if (!value) {
-        return NULL;
-    } else if (!collision->key) { // Found empty slot
+    if (!collision->key) { // Found empty slot
+        if (!value) return NULL;
         collision->key = key;
         collision->value = value;
+        collision->next = NULL;
         ++h->count;
         return NULL;
+    }
+
+    int i2 = (int)(hash_pointer(collision->key) & (size_t)(h->capacity-1));
+    if (i2 == i) { // Hit a node in the correct place
+        // Check for update to existing key:
+        for (hashmap_entry_t *e = collision; e && e->key; e = e->next) {
+            if (e->key == key) { // Update value
+                void *old_value = collision->value;
+                h->count += (value ? 1 : 0) + (old_value ? -1 : 0);
+                collision->value = value;
+                return old_value;
+            }
+        }
     }
 
     // Find a free space to insert:
@@ -95,8 +103,7 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
         goto retry;
     }
 
-    int i2 = (int)(hash_pointer(collision->key) & (size_t)(h->capacity-1));
-    if (i2 == i) { // Hit a node in the correct place
+    if (i2 == i) {
         // Put new node in a free slot
         h->lastfree->key = key;
         h->lastfree->value = value;
