@@ -35,8 +35,11 @@ $(LIBFILE): $(OBJFILES)
 %.o: %.c %.h
 	$(CC) -c $(ALL_FLAGS) -o $@ $<
 
+splint:
+	splint -weak -posix-lib -unrecog -initallelements -fullinitblock $(CFILES)
+
 example: example.c $(OBJFILES)
-	$(CC) $^ -o $@
+	$(CC) $^ $(G) $(O) -o $@
 
 install: $(LIBFILE) bhash.h
 	mkdir -p -m 755 "$(PREFIX)/lib" "$(PREFIX)/include"
@@ -46,4 +49,4 @@ install: $(LIBFILE) bhash.h
 uninstall:
 	rm -vf "$(PREFIX)/lib/$(LIBFILE)" "$(PREFIX)/include/$(NAME).h"
 
-.PHONY: all install uninstall clean
+.PHONY: all install uninstall clean splint
