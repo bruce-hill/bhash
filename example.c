@@ -1,7 +1,9 @@
 // A simple example program that lets users store and look up hash map values.
 // Compile with `make example`
-#include <string.h>
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "bhash.h"
 
@@ -10,10 +12,10 @@ int main(void)
     hashmap_t *h = hashmap_new(NULL);
 
     printf("Type either key=value pairs to assign to the hash, or key values to look up.\n");
+    char *line = NULL;
+    size_t size = 0;
     for (;;) { 
         printf("> ");
-        char *line = NULL;
-        size_t size = 0;
         ssize_t linelen = getline(&line, &size, stdin);
         if (linelen <= 1)
             break;
@@ -40,6 +42,7 @@ int main(void)
             else printf("(nil)\n");
         }
     }
+    if (line) free(line);
 
     printf("Final values:\n");
     // Iterate over the hash map and print each entry:
