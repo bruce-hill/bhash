@@ -29,6 +29,7 @@ pointers to other pointers. The API is as follows:
 
 ```c
 hashmap_t *hashmap_new(hashmap_t *fallback);
+void hashmap_clear(hashmap_t *h);
 void *hashmap_get(hashmap_t *h, void *key);
 void *hashmap_set(hashmap_t *h, void *key, void *value);
 void *hashmap_next(hashmap_t *h, void *key);
