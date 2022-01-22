@@ -113,7 +113,7 @@ static void intern_insert(char *str)
 // to the interned string table. Values passed in *should*
 // be allocated by malloc() or similar and the return value
 // should *not* be freed() other than via free_interned().
-char *str_intern_transfer(char *str)
+char *intern_str_transfer(char *str)
 {
     if (!str) return NULL;
     char *dup = lookup(str);
@@ -129,7 +129,7 @@ char *str_intern_transfer(char *str)
 // is not already intered. If a value is passed in that is
 // dynamically allocated, you are in charge of free()ing it
 // yourself.
-char *str_intern(char *str)
+char *intern_str(char *str)
 {
     if (!str) return NULL;
     char *dup = lookup(str);
@@ -138,7 +138,7 @@ char *str_intern(char *str)
     return str;
 }
 
-void free_interned(void)
+void intern_free(void)
 {
     if (interned == NULL) return;
     for (size_t i = 0; i < capacity; i++) {

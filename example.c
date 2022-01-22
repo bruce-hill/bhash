@@ -7,7 +7,7 @@
 
 int main(void)
 {
-    hashmap_t *h = new_hashmap(NULL);
+    hashmap_t *h = hashmap_new(NULL);
 
     printf("Type either key=value pairs to assign to the hash, or key values to look up.\n");
     for (;;) { 
@@ -23,16 +23,16 @@ int main(void)
         char *eq = strchr(line, '=');
         if (eq) { // Assign
             char *key = strndup(line, (size_t)(eq-line));
-            // Use str_intern_transfer() here so we don't have to free(key) afterwards
-            key = str_intern_transfer(key);
-            // Use str_intern() here since this is part of `line` and we don't want it freed
-            char *value = eq[1] ? str_intern(eq+1) : NULL;
+            // Use intern_str_transfer() here so we don't have to free(key) afterwards
+            key = intern_str_transfer(key);
+            // Use intern_str() here since this is part of `line` and we don't want it freed
+            char *value = eq[1] ? intern_str(eq+1) : NULL;
 
             // Store the value in the hash map:
             hashmap_set(h, key, value);
         } else {
             // Intern the key:
-            char *key = str_intern(line);
+            char *key = intern_str(line);
 
             // Get the value from the hash map:
             char *result = hashmap_get(h, key);
@@ -46,7 +46,7 @@ int main(void)
     for (char *key = NULL; (key = hashmap_next(h, key)); )
         printf("%s = %s\n", key, hashmap_get(h, key));
 
-    free_hashmap(&h);
-    free_interned();
+    hashmap_free(&h);
+    intern_free();
     return 0;
 }

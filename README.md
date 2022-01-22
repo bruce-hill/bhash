@@ -28,11 +28,11 @@ See [example.c](example.c) for some basic examples of how to use the library
 pointers to other pointers. The API is as follows:
 
 ```c
-hashmap_t *new_hashmap(hashmap_t *fallback);
+hashmap_t *hashmap_new(hashmap_t *fallback);
 void *hashmap_get(hashmap_t *h, void *key);
 void *hashmap_set(hashmap_t *h, void *key, void *value);
 void *hashmap_next(hashmap_t *h, void *key);
-void free_hashmap(hashmap_t **h);
+void hashmap_free(hashmap_t **h);
 ```
 
 Missing values are represented as `NULL`, so you can remove entries by setting
@@ -45,9 +45,9 @@ value instead.
 strings](https://en.wikipedia.org/wiki/String_interning). The API is as follows:
 
 ```c
-char *str_intern(char *str);
-char *str_intern_transfer(char *str);
-void free_interned(void);
+char *intern_str(char *str);
+char *intern_str_transfer(char *str);
+void intern_free(void);
 ```
 
 Generally speaking `str_intern_transfer()` should be used for dynamically

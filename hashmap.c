@@ -39,7 +39,7 @@ static void hashmap_resize(hashmap_t *h, int new_size)
     }
 }
 
-hashmap_t *new_hashmap(hashmap_t *fallback)
+hashmap_t *hashmap_new(hashmap_t *fallback)
 {
     hashmap_t *h = calloc(1, sizeof(hashmap_t));
     if (h) h->fallback = fallback;
@@ -143,7 +143,7 @@ void *hashmap_next(hashmap_t *h, void *key)
     return NULL;
 }
 
-void free_hashmap(hashmap_t **h)
+void hashmap_free(hashmap_t **h)
 {
     if (*h == NULL) return;
     if ((*h)->entries) free((*h)->entries);
