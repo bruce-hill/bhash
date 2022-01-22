@@ -36,6 +36,9 @@ void *hashmap_set(hashmap_t *h, void *key, void *value);
 // Get the key after the given key (or NULL to get the first key)
 __attribute__((nonnull(1),warn_unused_result))
 void *hashmap_next(hashmap_t *h, void *key);
+// Clear out all entries in the hashmap
+__attribute__((nonnull))
+void hashmap_clear(hashmap_t *h);
 // Deallocate the memory associated with the hash map (individual entries are not freed)
 __attribute__((nonnull))
 void hashmap_free(hashmap_t **h);

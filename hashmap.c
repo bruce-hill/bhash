@@ -46,6 +46,16 @@ hashmap_t *hashmap_new(hashmap_t *fallback)
     return h;
 }
 
+void hashmap_clear(hashmap_t *h)
+{
+    if (h->capacity == 0) return;
+    free(h->entries);
+    h->entries = NULL;
+    h->lastfree = NULL;
+    h->capacity = 0;
+    h->count = 0;
+}
+
 void *hashmap_get(hashmap_t *h, void *key)
 {
     if (h->capacity > 0) {
