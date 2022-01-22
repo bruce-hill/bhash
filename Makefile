@@ -32,7 +32,7 @@ clean:
 $(LIBFILE): $(OBJFILES)
 	$(CC) $^ -Wl,-soname,$(LIBFILE) -shared -o $@
 
-%.o: %.c %.h
+%.o: %.c bhash.h
 	$(CC) -c $(ALL_FLAGS) -o $@ $<
 
 splint:

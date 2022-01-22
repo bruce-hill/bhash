@@ -82,9 +82,9 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
         // Check for update to existing key:
         for (hashmap_entry_t *e = collision; e && e->key; e = e->next) {
             if (e->key == key) { // Update value
-                void *old_value = collision->value;
+                void *old_value = e->value;
                 h->count += (value ? 1 : 0) + (old_value ? -1 : 0);
-                collision->value = value;
+                e->value = value;
                 return old_value;
             }
         }
