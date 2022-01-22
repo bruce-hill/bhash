@@ -134,7 +134,8 @@ char *intern_str(char *str)
     if (!str) return NULL;
     char *dup = lookup(str);
     if (dup) return dup;
-    intern_insert(strdup(str));
+    str = strdup(str);
+    intern_insert(str);
     return str;
 }
 
