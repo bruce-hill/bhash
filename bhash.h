@@ -40,6 +40,8 @@ void *hashmap_next(hashmap_t *h, void *key);
 __attribute__((nonnull))
 void hashmap_free(hashmap_t **h);
 
+#define hashmap_pop(h, key) hashmap_set(h, key, NULL)
+
 //////////////////////////////////////////////////////
 //////////////   String Interning   //////////////////
 //////////////////////////////////////////////////////
