@@ -28,27 +28,16 @@ See [example.c](example.c) for some basic examples of how to use the library
 pointers to other pointers. The API is as follows:
 
 ```c
-hashmap_t *new_hashmap(void);
+hashmap_t *new_hashmap(hashmap_t *fallback);
 void *hashmap_get(hashmap_t *h, void *key);
-void *hashmap_pop(hashmap_t *h, void *key);
 void *hashmap_set(hashmap_t *h, void *key, void *value);
 void *hashmap_next(hashmap_t *h, void *key);
 void free_hashmap(hashmap_t **h);
 ```
 
-### Hash Sets
-
-[hashset.h](hashset.h) defines hash sets, which store unordered collections of 
-deduplicated pointers. The API is as follows:
-
-```c
-hashset_t *new_hashset(void);
-bool hashset_contains(hashset_t *h, void *item);
-bool hashset_remove(hashset_t *h, void *item);
-bool hashset_add(hashset_t *h, void *item);
-void *hashset_next(hashset_t *h, void *item);
-void free_hashset(hashset_t **h);
-```
+Missing values are represented as `NULL`, so you can remove entries by setting
+the value to `NULL`. If you need to store `NULL` in your table, use a sentinel
+value instead.
 
 ### String Interning
 

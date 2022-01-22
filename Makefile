@@ -21,7 +21,7 @@ O=-O3
 ALL_FLAGS=$(CFLAGS) $(OSFLAGS) $(EXTRA) $(CWARN) $(G) $(O)
 
 LIBFILE=lib$(NAME).so
-CFILES=hashset.c hashmap.c intern.c
+CFILES=hashmap.c intern.c
 OBJFILES=$(CFILES:.c=.o)
 
 all: $(LIBFILE)

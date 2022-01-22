@@ -26,7 +26,7 @@ int main(void)
             // Use str_intern_transfer() here so we don't have to free(key) afterwards
             key = str_intern_transfer(key);
             // Use str_intern() here since this is part of `line` and we don't want it freed
-            char *value = str_intern(eq+1);
+            char *value = eq[1] ? str_intern(eq+1) : NULL;
 
             // Store the value in the hash map:
             hashmap_set(h, key, value);

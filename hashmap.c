@@ -29,8 +29,7 @@ static void hashmap_resize(hashmap_t *h, int new_size)
     hashmap_t tmp = *h;
     h->entries = calloc((size_t)new_size, sizeof(hashmap_entry_t));
     h->capacity = new_size;
-    h->count = 0;
-    h->next_free = new_size - 1;
+    h->lastfree = &h->entries[new_size - 1];
     if (tmp.entries) {
         // Rehash:
         for (int i = 0; i < tmp.capacity; i++)
@@ -51,103 +50,73 @@ void *hashmap_get(hashmap_t *h, void *key)
 {
     if (h->capacity > 0) {
         int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
-        while (i != -1 && h->entries[i].key) {
-            if (key == h->entries[i].key)
-                return h->entries[i].value;
-            i = h->entries[i].next;
+        for (hashmap_entry_t *e = &h->entries[i]; e; e = e->next) {
+            if (e->key == key)
+                return e->value;
         }
     }
     if (h->fallback) return hashmap_get(h->fallback, key);
     return NULL;
 }
 
-void *hashmap_pop(hashmap_t *h, void *key)
-{
-    if (h->capacity == 0) return NULL;
-    int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
-    int prev = i;
-    while (h->entries[i].key != key) {
-        if (!h->entries[i].key || h->entries[i].next == -1)
-            return NULL;
-        prev = i;
-        i = h->entries[i].next;
-    }
-
-    void *ret = h->entries[i].value;
-    if (h->entries[i].next != -1) {
-        // @prev -> def@i -> after@i2 ->... ==> @prev -> after@i ->...; NULL@i2
-        int i2 = h->entries[i].next;
-        h->entries[i] = h->entries[i2];
-        memset(&h->entries[i2], 0, sizeof(hashmap_entry_t));
-        if (i2 > h->next_free) h->next_free = i2;
-    } else {
-        // prev->def@i ==> prev; NULL@i
-        if (prev != i)
-            h->entries[prev].next = -1;
-        memset(&h->entries[i], 0, sizeof(hashmap_entry_t));
-    }
-    --h->count;
-
-    // Shrink the storage if it's getting real empty:
-    if (h->count > 16 && h->count < h->capacity/3)
-        hashmap_resize(h, h->capacity/2);
-
-    return ret;
-}
-
 void *hashmap_set(hashmap_t *h, void *key, void *value)
 {
     if (key == NULL) return NULL;
-    if (value == NULL) return hashmap_pop(h, key);
 
     if (h->capacity == 0) hashmap_resize(h, 16);
 
-    // Grow the storage if necessary
-    if ((h->count + 1) >= h->capacity)
-        hashmap_resize(h, h->capacity*2);
-
+  retry:;
     int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
-    if (h->entries[i].key == NULL) { // No collision
-        h->entries[i].key = key;
-        h->entries[i].value = value;
-        h->entries[i].next = -1;
-    } else {
-        for (int j = i; j != -1; j = h->entries[j].next) {
-            if (h->entries[j].key == key) {
-                void *ret = h->entries[j].value;
-                h->entries[j].key = key;
-                h->entries[j].value = value;
-                return ret;
-            }
-        }
+    hashmap_entry_t *collision = &h->entries[i];
+    if (collision->key == key) { // Update value
+        void *old_value = collision->value;
+        h->count += (value ? 1 : 0) + (collision->value ? -1 : 0);
+        collision->value = value;
+        return old_value;
+    } else if (!value) {
+        return NULL;
+    } else if (!collision->key) { // Found empty slot
+        collision->key = key;
+        collision->value = value;
+        ++h->count;
+        return NULL;
+    }
 
-        while (h->entries[h->next_free].key) {
-            if (h->next_free <= 0) h->next_free = (int)(h->capacity - 1);
-            else --h->next_free;
-        }
-        int free = h->next_free;
+    // Find a free space to insert:
+    while (h->lastfree->key && h->lastfree >= h->entries)
+        --h->lastfree;
 
-        int i2 = (int)(hash_pointer(h->entries[i].key) & (size_t)(h->capacity-1));
-        if (i2 == i) { // Collision with element in its main position
-            // Before: colliding@i -> next
-            // After:  colliding@i -> noob@free -> next
-            h->entries[free].key = key;
-            h->entries[free].value = value;
-            h->entries[free].next = h->entries[i].next;
-            h->entries[i].next = free;
-        } else { // Collision with element in a chain
-            int prev = i2;
-            while (h->entries[prev].next != i)
-                prev = h->entries[prev].next;
+    // No spaces left, gotta resize and try again:
+    if (h->lastfree < h->entries) {
+        int newsize = h->capacity;
+        if (h->count + 1 > newsize) newsize *= 2;
+        else if (h->count + 1 <= newsize/2) newsize /= 2;
+        hashmap_resize(h, newsize);
+        goto retry;
+    }
 
-            // Before: _@i2 ->...-> prev@prev -> colliding@i -> next
-            // After:  _@i2 ->...-> prev@prev -> colliding@free -> next; noob@i
-            h->entries[prev].next = free;
-            h->entries[free] = h->entries[i];
-            h->entries[i].key = key;
-            h->entries[i].value = value;
-            h->entries[i].next = -1;
-        }
+    int i2 = (int)(hash_pointer(collision->key) & (size_t)(h->capacity-1));
+    if (i2 == i) { // Hit a node in the correct place
+        // Put new node in a free slot
+        h->lastfree->key = key;
+        h->lastfree->value = value;
+        // Put it between the colliding node and the second node in the chain
+        h->lastfree->next = collision->next;
+        collision->next = h->lastfree;
+    } else { // Hit the middle of a chain for some other hash value
+        // Rearrange from prevcollision..collision@i..nextcollision, NULL@nextfree
+        // to: (key:value)@i, prevcollision..collision@nextfree..nextcollision
+        hashmap_entry_t *prev = &h->entries[i2];
+        while (prev->next != collision)
+            prev = prev->next;
+
+        // Scootch collider to new space
+        memcpy(h->lastfree, collision, sizeof(hashmap_entry_t));
+        prev->next = h->lastfree;
+
+        collision->key = key;
+        collision->value = value;
+        collision->next = NULL;
     }
     ++h->count;
     return NULL;
@@ -156,19 +125,20 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
 void *hashmap_next(hashmap_t *h, void *key)
 {
     if (h->capacity == 0) return NULL;
-    int i = 0;
+    hashmap_entry_t *e = &h->entries[0];
     if (key) {
-        i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
-        if (!h->entries[i].key) {
-            i = 0;
-        } else {
-            while (key != h->entries[i].key && h->entries[i].next != -1)
-                i = h->entries[i].next;
-            ++i;
-        }
+        // Find entry in the hash table
+        int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
+        e = &h->entries[i];
+        if (!e->key) return NULL;
+        while (e && e->key != key)
+            e = e->next;
+        if (!e) return NULL;
+        // Then start looking for the next free entry after it
+        ++e;
     }
-    for (; i < h->capacity; i++)
-        if (h->entries[i].key) return h->entries[i].key;
+    for (; e < &h->entries[h->capacity]; e++)
+        if (e->key && e->value) return e->key;
 
     return NULL;
 }

@@ -5,15 +5,15 @@
 
 #pragma once
 
-typedef struct {
+typedef struct hashmap_entry_s {
     void *key, *value;
-    int next;
+    struct hashmap_entry_s *next;
 } hashmap_entry_t;
 
 typedef struct hashmap_s {
-    hashmap_entry_t *entries;
+    hashmap_entry_t *entries, *lastfree;
     struct hashmap_s *fallback;
-    int capacity, count, next_free;
+    int capacity, count;
 } hashmap_t;
 
 // Allocate a new hash map
@@ -22,9 +22,6 @@ hashmap_t *new_hashmap(hashmap_t *fallback);
 // Retrieve a value from a hash map (or return NULL) if not found
 __attribute__((nonnull,warn_unused_result))
 void *hashmap_get(hashmap_t *h, void *key);
-// Remove and return a value from a hash map (or return NULL) if not found
-__attribute__((nonnull))
-void *hashmap_pop(hashmap_t *h, void *key);
 // Store a key/value pair in the hash map and return the previous value (if any)
 __attribute__((nonnull(1,2)))
 void *hashmap_set(hashmap_t *h, void *key, void *value);

@@ -16,15 +16,15 @@
 #include <string.h>
 #include <stdlib.h>
 
-typedef struct {
+typedef struct intern_entry_s {
     char *str;
-    int next;
+    struct intern_entry_s *next;
 } intern_entry_t;
 
-static intern_entry_t *interned = NULL;
-static int capacity = 0, count = 0, next_free = 0;
+static intern_entry_t *interned = NULL, *lastfree = NULL;
+static size_t capacity = 0, count = 0;
 
-static void hashset_add(char *str);
+static void intern_insert(char *str);
 
 static size_t hash_str(char *s)
 {
@@ -44,79 +44,67 @@ static size_t hash_str(char *s)
     return h;
 }
 
-static void hashset_resize(int new_size)
+static void rehash(size_t new_size)
 {
     intern_entry_t *old = interned;
-    int old_capacity = capacity;
-    interned = calloc((size_t)new_size, sizeof(intern_entry_t));
+    size_t old_capacity = capacity;
+    interned = calloc(new_size, sizeof(intern_entry_t));
     capacity = new_size;
     count = 0;
-    next_free = new_size - 1;
+    lastfree = &interned[new_size - 1];
     // Rehash:
     if (old) {
-        for (int i = 0; i < old_capacity; i++)
+        for (size_t i = 0; i < old_capacity; i++)
             if (old[i].str)
-                hashset_add(old[i].str);
+                intern_insert(old[i].str);
         free(old);
     }
 }
 
-static char *hashset_get(char *str)
+static char *lookup(char *str)
 {
     if (capacity == 0 || !str) return NULL;
     int i = (int)(hash_str(str) & (size_t)(capacity-1));
-    while (i != -1 && interned[i].str) {
-        if (strcmp(str, interned[i].str) == 0)
-            return interned[i].str;
-        i = interned[i].next;
+    for (intern_entry_t *e = &interned[i]; e && e->str; e = e->next) {
+        if (strcmp(str, e->str) == 0)
+            return e->str;
     }
     return NULL;
 }
 
-static void hashset_add(char *str)
+static void intern_insert(char *str)
 {
     if (!str) return;
 
     // Grow the storage if necessary
-    if (capacity == 0) hashset_resize(16);
+    if (capacity == 0) rehash(16);
     else if ((count + 1) >= capacity)
-        hashset_resize(capacity*2);
+        rehash(capacity*2);
 
     int i = (int)(hash_str(str) & (size_t)(capacity-1));
-    if (interned[i].str == NULL) { // No collision
-        interned[i].str = str;
-        interned[i].next = -1;
+    intern_entry_t *collision = &interned[i];
+    if (collision->str == NULL) { // No collision
+        collision->str = str;
+        ++count;
+        return;
+    }
+
+    while (lastfree >= interned && lastfree->str)
+        --lastfree;
+
+    int i2 = (int)(hash_str(collision->str) & (size_t)(capacity-1));
+    if (i2 == i) { // Collision with element in its main position
+        lastfree->str = str;
+        lastfree->next = collision->next;
+        collision->next = lastfree;
     } else {
-        for (int j = i; j != -1; j = interned[j].next) {
-            if (strcmp(interned[j].str, str) == 0)
-                return;
-        }
-
-        while (interned[next_free].str) {
-            if (next_free <= 0) next_free = (int)(capacity - 1);
-            else --next_free;
-        }
-        int free = next_free;
-
-        int i2 = (int)(hash_str(interned[i].str) & (size_t)(capacity-1));
-        if (i2 == i) { // Collision with element in its main position
-            // Before: colliding@i -> next
-            // After:  colliding@i -> noob@free -> next
-            interned[free].str = str;
-            interned[free].next = interned[i].next;
-            interned[i].next = free;
-        } else { // Collision with element in a chain
-            int prev = i2;
-            while (interned[prev].next != i)
-                prev = interned[prev].next;
-
-            // Before: _@i2 ->...-> prev@prev -> colliding@i -> next
-            // After:  _@i2 ->...-> prev@prev -> colliding@free -> next; noob@i
-            interned[prev].next = free;
-            interned[free] = interned[i];
-            interned[i].str = str;
-            interned[i].next = -1;
-        }
+        intern_entry_t *prev = &interned[i2];
+        while (prev->next != collision)
+            prev = prev->next;
+        memcpy(lastfree, collision, sizeof(intern_entry_t));
+        prev->next = lastfree;
+        collision->str = str;
+        collision->next = NULL;
     }
     ++count;
 }
@@ -128,12 +116,12 @@ static void hashset_add(char *str)
 char *str_intern_transfer(char *str)
 {
     if (!str) return NULL;
-    char *dup = hashset_get(str);
+    char *dup = lookup(str);
     if (dup) {
         free(str);
         return dup;
     }
-    hashset_add(str);
+    intern_insert(str);
     return str;
 }
 
@@ -144,17 +132,16 @@ char *str_intern_transfer(char *str)
 char *str_intern(char *str)
 {
     if (!str) return NULL;
-    char *dup = hashset_get(str);
+    char *dup = lookup(str);
     if (dup) return dup;
-    str = strdup(str);
-    hashset_add(str);
+    intern_insert(strdup(str));
     return str;
 }
 
 void free_interned(void)
 {
     if (interned == NULL) return;
-    for (int i = 0; i < capacity; i++) {
+    for (size_t i = 0; i < capacity; i++) {
         if (interned[i].str)
             free((char*)interned[i].str);
     }
