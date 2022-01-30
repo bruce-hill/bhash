@@ -1,45 +1,40 @@
-// intern.c - C String Interning Library
+// intern.c - C Memory Interning Library
 // Copyright 2022 Bruce Hill
 // Provided under the MIT license with the Commons Clause
 // See included LICENSE for details.
 
-// String Intern(aliz)ing Implementation
-// Strings are hashed and stored in a table.
-// When interning, if a string is already in the table, it will be
-// returned. Otherwise the original string (or a copy of it) will
-// be returned. This is useful for ensuring that each string is
-// only stored in memory once, and string equality and hashing can
-// be performed on the pointers of the strings. These strings should
+// Memory Intern(aliz)ing Implementation
+// Memory contents are hashed and stored in a table.
+// When interning, if a chunk of memory is already in the table, it will be
+// returned. Otherwise the original memory (or a copy of it) will be returned.
+// This is useful for ensuring that each chunk of memory is only stored in
+// memory once, and a single pointer to that memory can be used for
+// constant-time hashing and equality comparisons. Any interned memory should
 // be treated as immutable.
 // See README.md for more details on the hash table impelmentation.
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct intern_entry_s {
-    char *str;
+    char *mem;
+    size_t len;
     struct intern_entry_s *next;
 } intern_entry_t;
 
 static intern_entry_t *interned = NULL, *lastfree = NULL;
 static size_t capacity = 0, count = 0;
 
-static void intern_insert(char *str);
+static void intern_insert(char *mem, size_t len);
 
-static size_t hash_str(char *s)
+static size_t hash_mem(char *m, size_t len)
 {
-    register unsigned char *p = (unsigned char *)s;
-    register size_t h = (size_t)(*p << 7);
-    register size_t len = 0;
-    while (*p) {
+    if (__builtin_expect(len == 0, 0)) return 0;
+    register unsigned char *p = (unsigned char *)m;
+    register size_t h = (size_t)(*p << 7) ^ len;
+    register size_t i = len > 128 ? 128 : len;
+    while (i--)
         h = (1000003*h) ^ *p++;
-        ++len;
-        if (len >= 127) {
-            len += strlen((char*)p+1);
-            break; // Optimization: only hash the first part of the string
-        }
-    }
-    h ^= len;
     if (h == 0) h = 1234567;
     return h;
 }
@@ -55,46 +50,48 @@ static void rehash(size_t new_size)
     // Rehash:
     if (old) {
         for (size_t i = 0; i < old_capacity; i++)
-            if (old[i].str)
-                intern_insert(old[i].str);
+            if (old[i].mem)
+                intern_insert(old[i].mem, old[i].len);
         free(old);
     }
 }
 
-static char *lookup(char *str)
+static char *lookup(char *mem, size_t len)
 {
-    if (capacity == 0 || !str) return NULL;
-    int i = (int)(hash_str(str) & (size_t)(capacity-1));
-    for (intern_entry_t *e = &interned[i]; e && e->str; e = e->next) {
-        if (strcmp(str, e->str) == 0)
-            return e->str;
+    if (capacity == 0 || !mem) return NULL;
+    int i = (int)(hash_mem(mem, len) & (size_t)(capacity-1));
+    for (intern_entry_t *e = &interned[i]; e && e->mem; e = e->next) {
+        if (e->len == len && memcmp(mem, e->mem, len) == 0)
+            return e->mem;
     }
     return NULL;
 }
 
-static void intern_insert(char *str)
+static void intern_insert(char *mem, size_t len)
 {
-    if (!str) return;
+    if (!mem) return;
 
     // Grow the storage if necessary
     if (capacity == 0) rehash(16);
     else if ((count + 1) >= capacity)
         rehash(capacity*2);
 
-    int i = (int)(hash_str(str) & (size_t)(capacity-1));
+    int i = (int)(hash_mem(mem, len) & (size_t)(capacity-1));
     intern_entry_t *collision = &interned[i];
-    if (collision->str == NULL) { // No collision
-        collision->str = str;
+    if (collision->mem == NULL) { // No collision
+        collision->mem = mem;
+        collision->len = len;
         ++count;
         return;
     }
 
-    while (lastfree >= interned && lastfree->str)
+    while (lastfree >= interned && lastfree->mem)
         --lastfree;
 
-    int i2 = (int)(hash_str(collision->str) & (size_t)(capacity-1));
+    int i2 = (int)(hash_mem(collision->mem, collision->len) & (size_t)(capacity-1));
     if (i2 == i) { // Collision with element in its main position
-        lastfree->str = str;
+        lastfree->mem = mem;
+        lastfree->len = len;
         lastfree->next = collision->next;
         collision->next = lastfree;
     } else {
@@ -103,48 +100,50 @@ static void intern_insert(char *str)
             prev = prev->next;
         memcpy(lastfree, collision, sizeof(intern_entry_t));
         prev->next = lastfree;
-        collision->str = str;
+        collision->mem = mem;
+        collision->len = len;
         collision->next = NULL;
     }
     ++count;
 }
 
-// Variant that frees or transfers ownership of the string
-// to the interned string table. Values passed in *should*
+// Variant that frees or transfers ownership of the memory
+// to the interned memory table. Values passed in *should*
 // be allocated by malloc() or similar and the return value
 // should *not* be freed() other than via free_interned().
-char *intern_str_transfer(char *str)
+char *intern_bytes_transfer(char *mem, size_t len)
 {
-    if (!str) return NULL;
-    char *dup = lookup(str);
+    if (!mem || len == 0) return NULL;
+    char *dup = lookup(mem, len);
     if (dup) {
-        free(str);
+        free(mem);
         return dup;
     }
-    intern_insert(str);
-    return str;
+    intern_insert(mem, len);
+    return mem;
 }
 
-// Variant that allocates a copy of the given string if it
+// Variant that allocates a copy of the given memory if it
 // is not already intered. If a value is passed in that is
 // dynamically allocated, you are in charge of free()ing it
 // yourself.
-char *intern_str(char *str)
+char *intern_bytes(char *mem, size_t len)
 {
-    if (!str) return NULL;
-    char *dup = lookup(str);
+    if (!mem || len == 0) return NULL;
+    char *dup = lookup(mem, len);
     if (dup) return dup;
-    str = strdup(str);
-    intern_insert(str);
-    return str;
+    char *copy = malloc(len);
+    memcpy(copy, mem, len);
+    intern_insert(copy, len);
+    return copy;
 }
 
 void intern_free(void)
 {
     if (interned == NULL) return;
     for (size_t i = 0; i < capacity; i++) {
-        if (interned[i].str)
-            free((char*)interned[i].str);
+        if (interned[i].mem)
+            free((char*)interned[i].mem);
     }
     free(interned);
     interned = NULL;

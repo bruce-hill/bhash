@@ -3,8 +3,6 @@
 // Provided under the MIT license with the Commons Clause
 // See included LICENSE for details.
 
-// This file is a combination of the files hashmap.h, hashset.h, and intern.h
-
 #pragma once
 
 #include <stdbool.h>
@@ -49,16 +47,21 @@ void hashmap_free(hashmap_t **h);
 //////////////   String Interning   //////////////////
 //////////////////////////////////////////////////////
 
-// Intern a string into memory.
-// If an equivalent string was already in the table, return that version, otherwise return a copy.
+// Intern a chunk of memory, or return an existing version if one is in memory already.
 __attribute__((warn_unused_result))
-char *intern_str(char *str);
-// Transfer ownership of a dynamically allocated string to the intern table.
-// If an equivalent string was already interned, free `str` and return the existing string.
-// Otherwise, store `str` in the table.
+char *intern_bytes(char *mem, size_t len);
+// Transfer ownership of a dynamically allocated chunk of memory to the intern table.
+// If an equivalent chunk of memory was already interned, free `mem` and return the existing memory.
+// Otherwise, store `mem` in the table.
 __attribute__((warn_unused_result))
-char *intern_str_transfer(char *str);
-// Free all interned strings and the table used to track them.
+char *intern_bytes_transfer(char *mem, size_t len);
+// Free all interned memory and the table used to track them.
 void intern_free(void);
+
+// Convenience methods for strings:
+__attribute__((warn_unused_result))
+inline char *intern_str(char *str) { return intern_bytes(str, strlen(str)+1); }
+__attribute__((warn_unused_result))
+inline char *intern_str_transfer(char *str) { return intern_bytes_transfer(str, strlen(str)+1); }
 
 // vim: ts=4 sw=0 et cino=L2,l1,(0,W4,m1
