@@ -46,14 +46,18 @@ value instead.
 strings](https://en.wikipedia.org/wiki/String_interning). The API is as follows:
 
 ```c
+char *intern_bytes(char *mem, size_t len);
+char *intern_bytes_transfer(char *mem, size_t len);
 char *intern_str(char *str);
 char *intern_str_transfer(char *str);
 void intern_free(void);
 ```
 
-Generally speaking `str_intern_transfer()` should be used for dynamically
-allocated strings and `str_intern()` should be used if you do not want the
-library to potentially call `free()` on any values you pass in.
+Generally speaking `intern_str_transfer()` should be used for dynamically
+allocated strings and `intern_str()` should be used if you do not want the
+library to potentially call `free()` on any values you pass in. The
+`intern_bytes*` variants allow for interning arbitrary memory which may contain
+NULL bytes.
 
 # Hash Table Implementation
 
