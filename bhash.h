@@ -6,6 +6,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 
 //////////////////////////////////////////////////////
 ////////////////    Hash Maps     ////////////////////
@@ -60,8 +61,8 @@ void intern_free(void);
 
 // Convenience methods for strings:
 __attribute__((warn_unused_result))
-inline char *intern_str(char *str) { return intern_bytes(str, strlen(str)+1); }
+static inline char *intern_str(char *str) { return intern_bytes(str, strlen(str)+1); }
 __attribute__((warn_unused_result))
-inline char *intern_str_transfer(char *str) { return intern_bytes_transfer(str, strlen(str)+1); }
+static inline char *intern_str_transfer(char *str) { return intern_bytes_transfer(str, strlen(str)+1); }
 
 // vim: ts=4 sw=0 et cino=L2,l1,(0,W4,m1
