@@ -27,10 +27,10 @@ static size_t capacity = 0, count = 0;
 
 static void intern_insert(char *mem, size_t len);
 
-static size_t hash_mem(char *m, size_t len)
+static size_t hash_mem(char *mem, size_t len)
 {
     if (__builtin_expect(len == 0, 0)) return 0;
-    register unsigned char *p = (unsigned char *)m;
+    register unsigned char *p = (unsigned char *)mem;
     register size_t h = (size_t)(*p << 7) ^ len;
     register size_t i = len > 128 ? 128 : len;
     while (i--)
@@ -69,7 +69,7 @@ static char *lookup(char *mem, size_t len)
 
 static void intern_insert(char *mem, size_t len)
 {
-    if (!mem) return;
+    if (!mem || len == 0) return;
 
     // Grow the storage if necessary
     if (capacity == 0) rehash(16);
