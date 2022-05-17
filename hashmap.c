@@ -46,6 +46,11 @@ hashmap_t *hashmap_new(hashmap_t *fallback)
     return h;
 }
 
+size_t hashmap_length(hashmap_t *h)
+{
+    return (size_t)h->count;
+}
+
 void hashmap_clear(hashmap_t *h)
 {
     if (h->capacity == 0) return;

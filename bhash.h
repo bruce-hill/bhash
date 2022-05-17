@@ -27,6 +27,9 @@ typedef struct hashmap_s {
 // Allocate a new hash map
 __attribute__((warn_unused_result))
 hashmap_t *hashmap_new(hashmap_t *fallback);
+// Get a hash map's length
+__attribute__((nonnull))
+size_t hashmap_length(hashmap_t *h);
 // Retrieve a value from a hash map (or return NULL) if not found
 __attribute__((nonnull,warn_unused_result))
 void *hashmap_get(hashmap_t *h, void *key);
