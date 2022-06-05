@@ -22,11 +22,16 @@ typedef struct hashmap_s {
     hashmap_entry_t *entries, *lastfree;
     struct hashmap_s *fallback;
     int capacity, count;
+    void *(*allocator)(size_t,size_t);
+    void (*freer)(void*);
 } hashmap_t;
 
 // Allocate a new hash map
 __attribute__((warn_unused_result))
 hashmap_t *hashmap_new(hashmap_t *fallback);
+// Allocate a new hash map using a custom allocator
+__attribute__((warn_unused_result))
+hashmap_t *hashmap_new_alloc(void *(*allocator)(size_t,size_t), void (*freer)(void*), hashmap_t *fallback);
 // Get a hash map's length
 __attribute__((nonnull))
 size_t hashmap_length(hashmap_t *h);

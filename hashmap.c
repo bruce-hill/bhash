@@ -27,7 +27,7 @@ static inline size_t hash_pointer(void *p)
 static void hashmap_resize(hashmap_t *h, int new_size)
 {
     hashmap_t old = *h;
-    h->entries = calloc((size_t)new_size, sizeof(hashmap_entry_t));
+    h->entries = (h->allocator ? h->allocator : calloc)((size_t)new_size, sizeof(hashmap_entry_t));
     h->capacity = new_size;
     h->lastfree = &h->entries[new_size - 1];
     if (old.entries) {
@@ -35,14 +35,25 @@ static void hashmap_resize(hashmap_t *h, int new_size)
         for (int i = 0; i < old.capacity; i++)
             if (old.entries[i].key)
                 (void)hashmap_set(h, old.entries[i].key, old.entries[i].value);
-        free(old.entries);
+        (h->freer ? h->freer : free)(old.entries);
     }
 }
 
 hashmap_t *hashmap_new(hashmap_t *fallback)
 {
     hashmap_t *h = calloc(1, sizeof(hashmap_t));
-    if (h) h->fallback = fallback;
+    if (!h) return h;
+    h->fallback = fallback;
+    return h;
+}
+
+hashmap_t *hashmap_new_alloc(void *(*allocator)(size_t,size_t), void (*freer)(void*), hashmap_t *fallback)
+{
+    hashmap_t *h = allocator(1, sizeof(hashmap_t));
+    if (!h) return h;
+    h->fallback = fallback;
+    h->allocator = allocator;
+    h->freer = freer;
     return h;
 }
 
@@ -54,7 +65,7 @@ size_t hashmap_length(hashmap_t *h)
 void hashmap_clear(hashmap_t *h)
 {
     if (h->capacity == 0) return;
-    free(h->entries);
+    (h->freer ? h->freer : free)(h->entries);
     h->entries = NULL;
     h->lastfree = NULL;
     h->capacity = 0;
@@ -168,8 +179,8 @@ void *hashmap_next(hashmap_t *h, void *key)
 void hashmap_free(hashmap_t **h)
 {
     if (*h == NULL) return;
-    if ((*h)->entries) free((*h)->entries);
-    free(*h);
+    if ((*h)->entries) ((*h)->freer ? (*h)->freer : free)((*h)->entries);
+    ((*h)->freer ? (*h)->freer : free)(*h);
     *h = NULL;
 }
 // vim: ts=4 sw=0 et cino=L2,l1,(0,W4,m1
