@@ -1,8 +1,8 @@
 # Basic Hashing (bhash) Library
 
-This library provides some basic tools for working with interned strings, hash
-maps, and hash sets. The hash maps/sets both work with pointers, so it's
-recommended to use interned strings if you want to use strings as hash keys.
+This library provides a basic but performant hash map implementation for C. The
+hash maps work with pointers, so it's recommended to use interned strings if
+you want to use strings as hash keys.
 
 ## Installation
 
@@ -28,36 +28,24 @@ See [example.c](example.c) for some basic examples of how to use the library
 pointers to other pointers. The API is as follows:
 
 ```c
-hashmap_t *hashmap_new(hashmap_t *fallback);
-void hashmap_clear(hashmap_t *h);
-void *hashmap_get(hashmap_t *h, void *key);
-void *hashmap_set(hashmap_t *h, void *key, void *value);
-void *hashmap_next(hashmap_t *h, void *key);
-void hashmap_free(hashmap_t **h);
+hashmap_t *hashmap_new(void)
+size_t hashmap_length(hashmap_t *h)
+void *hashmap_get(hashmap_t *h, void *key)
+void *hashmap_set(hashmap_t *h, void *key, void *value)
+void *hashmap_next(hashmap_t *h, void *key)
+void hashmap_clear(hashmap_t *h)
+void hashmap_free(hashmap_t **h)
 ```
 
 Missing values are represented as `NULL`, so you can remove entries by setting
 the value to `NULL`. If you need to store `NULL` in your table, use a sentinel
-value instead.
+value instead, or XOR values with a sentinel before/after storing.
 
-### String Interning
-
-[intern.h](intern.h) defines a simple API for [interning
-strings](https://en.wikipedia.org/wiki/String_interning). The API is as follows:
+Additionally, you can set a custom allocator for hash map allocations:
 
 ```c
-char *intern_bytes(char *mem, size_t len);
-char *intern_bytes_transfer(char *mem, size_t len);
-char *intern_str(char *str);
-char *intern_str_transfer(char *str);
-void intern_free(void);
+void hashmap_set_allocator(void *(*alloc)(size_t), void (*free)(void*))
 ```
-
-Generally speaking `intern_str_transfer()` should be used for dynamically
-allocated strings and `intern_str()` should be used if you do not want the
-library to potentially call `free()` on any values you pass in. The
-`intern_bytes*` variants allow for interning arbitrary memory which may contain
-NULL bytes.
 
 # Hash Table Implementation
 

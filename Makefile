@@ -21,7 +21,7 @@ O=-O3
 ALL_FLAGS=$(CFLAGS) $(OSFLAGS) $(EXTRA) $(CWARN) $(G) $(O)
 
 LIBFILE=lib$(NAME).so
-CFILES=hashmap.c intern.c
+CFILES=bhash.c
 OBJFILES=$(CFILES:.c=.o)
 
 all: $(LIBFILE)
@@ -39,7 +39,7 @@ splint:
 	splint -weak -posix-lib -unrecog -initallelements -fullinitblock $(CFILES)
 
 example: example.c $(OBJFILES)
-	$(CC) $^ $(G) $(O) -o $@
+	$(CC) $^ $(G) $(O) -o $@ -lgc -lintern
 
 install: $(LIBFILE) bhash.h
 	mkdir -p -m 755 "$(PREFIX)/lib" "$(PREFIX)/include"

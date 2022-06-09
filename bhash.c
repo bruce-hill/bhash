@@ -17,7 +17,16 @@
 
 #include "bhash.h"
 
-static inline size_t hash_pointer(void *p)
+static void *(*custom_alloc)(size_t) = malloc;
+static void (*custom_free)(void*) = free;
+
+void hashmap_set_allocator(void *(*alloc)(size_t), void (*free)(void*))
+{
+    custom_alloc = alloc;
+    custom_free = free;
+}
+
+static inline size_t hash_pointer(const void *p)
 {
     size_t s = (size_t)p;
     if (s == 0) return 1234567;
@@ -27,7 +36,9 @@ static inline size_t hash_pointer(void *p)
 static void hashmap_resize(hashmap_t *h, int new_size)
 {
     hashmap_t old = *h;
-    h->entries = (h->allocator ? h->allocator : calloc)((size_t)new_size, sizeof(hashmap_entry_t));
+    size_t size = (size_t)new_size*sizeof(hashmap_entry_t);
+    h->entries = custom_alloc(size);
+    memset(h->entries, 0, size);
     h->capacity = new_size;
     h->lastfree = &h->entries[new_size - 1];
     if (old.entries) {
@@ -35,25 +46,15 @@ static void hashmap_resize(hashmap_t *h, int new_size)
         for (int i = 0; i < old.capacity; i++)
             if (old.entries[i].key)
                 (void)hashmap_set(h, old.entries[i].key, old.entries[i].value);
-        (h->freer ? h->freer : free)(old.entries);
+        if (custom_free) custom_free(old.entries);
     }
 }
 
-hashmap_t *hashmap_new(hashmap_t *fallback)
+hashmap_t *hashmap_new(void)
 {
-    hashmap_t *h = calloc(1, sizeof(hashmap_t));
+    hashmap_t *h = custom_alloc(sizeof(hashmap_t));
     if (!h) return h;
-    h->fallback = fallback;
-    return h;
-}
-
-hashmap_t *hashmap_new_alloc(void *(*allocator)(size_t,size_t), void (*freer)(void*), hashmap_t *fallback)
-{
-    hashmap_t *h = allocator(1, sizeof(hashmap_t));
-    if (!h) return h;
-    h->fallback = fallback;
-    h->allocator = allocator;
-    h->freer = freer;
+    memset(h, 0, sizeof(hashmap_t));
     return h;
 }
 
@@ -65,14 +66,14 @@ size_t hashmap_length(hashmap_t *h)
 void hashmap_clear(hashmap_t *h)
 {
     if (h->capacity == 0) return;
-    (h->freer ? h->freer : free)(h->entries);
+    if (custom_free) custom_free(h->entries);
     h->entries = NULL;
     h->lastfree = NULL;
     h->capacity = 0;
     h->count = 0;
 }
 
-void *hashmap_get(hashmap_t *h, void *key)
+const void *hashmap_get(hashmap_t *h, const void *key)
 {
     if (h->capacity > 0) {
         int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
@@ -85,7 +86,7 @@ void *hashmap_get(hashmap_t *h, void *key)
     return NULL;
 }
 
-void *hashmap_set(hashmap_t *h, void *key, void *value)
+const void *hashmap_set(hashmap_t *h, const void *key, const void *value)
 {
     if (key == NULL) return NULL;
 
@@ -108,7 +109,7 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
         // Check for update to existing key:
         for (hashmap_entry_t *e = collision; e && e->key; e = e->next) {
             if (e->key == key) { // Update value
-                void *old_value = e->value;
+                const void *old_value = e->value;
                 h->count += (value ? 1 : 0) + (old_value ? -1 : 0);
                 e->value = value;
                 return old_value;
@@ -155,7 +156,7 @@ void *hashmap_set(hashmap_t *h, void *key, void *value)
     return NULL;
 }
 
-void *hashmap_next(hashmap_t *h, void *key)
+const void *hashmap_next(hashmap_t *h, const void *key)
 {
     if (h->capacity == 0) return NULL;
     hashmap_entry_t *e = &h->entries[0];
@@ -178,9 +179,9 @@ void *hashmap_next(hashmap_t *h, void *key)
 
 void hashmap_free(hashmap_t **h)
 {
-    if (*h == NULL) return;
-    if ((*h)->entries) ((*h)->freer ? (*h)->freer : free)((*h)->entries);
-    ((*h)->freer ? (*h)->freer : free)(*h);
+    if (*h == NULL || !custom_free) return;
+    if ((*h)->entries) custom_free((*h)->entries);
+    custom_free(*h);
     *h = NULL;
 }
 // vim: ts=4 sw=0 et cino=L2,l1,(0,W4,m1
