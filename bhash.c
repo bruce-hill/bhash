@@ -73,7 +73,7 @@ void hashmap_clear(hashmap_t *h)
     h->count = 0;
 }
 
-const void *hashmap_get(hashmap_t *h, const void *key)
+void *hashmap_get(hashmap_t *h, const void *key)
 {
     if (h->capacity > 0) {
         int i = (int)(hash_pointer(key) & (size_t)(h->capacity-1));
@@ -86,7 +86,7 @@ const void *hashmap_get(hashmap_t *h, const void *key)
     return NULL;
 }
 
-const void *hashmap_set(hashmap_t *h, const void *key, const void *value)
+void *hashmap_set(hashmap_t *h, const void *key, const void *value)
 {
     if (key == NULL) return NULL;
 
@@ -98,7 +98,7 @@ const void *hashmap_set(hashmap_t *h, const void *key, const void *value)
     if (!collision->key) { // Found empty slot
         if (!value) return NULL;
         collision->key = key;
-        collision->value = value;
+        collision->value = (void*)value;
         collision->next = NULL;
         ++h->count;
         return NULL;
@@ -109,9 +109,9 @@ const void *hashmap_set(hashmap_t *h, const void *key, const void *value)
         // Check for update to existing key:
         for (hashmap_entry_t *e = collision; e && e->key; e = e->next) {
             if (e->key == key) { // Update value
-                const void *old_value = e->value;
+                void *old_value = e->value;
                 h->count += (value ? 1 : 0) + (old_value ? -1 : 0);
-                e->value = value;
+                e->value = (void*)value;
                 return old_value;
             }
         }
@@ -133,7 +133,7 @@ const void *hashmap_set(hashmap_t *h, const void *key, const void *value)
     if (i2 == i) {
         // Put new node in a free slot
         h->lastfree->key = key;
-        h->lastfree->value = value;
+        h->lastfree->value = (void*)value;
         // Put it between the colliding node and the second node in the chain
         h->lastfree->next = collision->next;
         collision->next = h->lastfree;
@@ -149,7 +149,7 @@ const void *hashmap_set(hashmap_t *h, const void *key, const void *value)
         prev->next = h->lastfree;
 
         collision->key = key;
-        collision->value = value;
+        collision->value = (void*)value;
         collision->next = NULL;
     }
     ++h->count;
