@@ -2,7 +2,9 @@
 
 This library provides a basic but performant hash map implementation for C. The
 hash maps work with pointers, so it's recommended to use interned strings if
-you want to use strings as hash keys.
+you want to use strings as hash keys. My other library
+[intern](https://github.com/bruce-hill/intern/) was designed alongside this
+library and intended to be used together, although it's not required.
 
 ## Installation
 
