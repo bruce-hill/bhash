@@ -32,6 +32,9 @@ void hashmap_set_allocator(void *(*alloc)(size_t), void (*free)(void*));
 // Allocate a new hash map
 __attribute__((warn_unused_result))
 hashmap_t *hashmap_new(void);
+// Copy a hash map
+__attribute__((warn_unused_result))
+hashmap_t *hashmap_copy(hashmap_t *h);
 // Get a hash map's length
 __attribute__((nonnull))
 size_t hashmap_length(hashmap_t *h);

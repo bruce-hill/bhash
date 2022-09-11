@@ -31,6 +31,7 @@ pointers to other pointers. The API is as follows:
 
 ```c
 hashmap_t *hashmap_new(void)
+hashmap_t *hashmap_copy(hashmap_t *h)
 size_t hashmap_length(hashmap_t *h)
 void *hashmap_get(hashmap_t *h, void *key)
 void *hashmap_set(hashmap_t *h, void *key, void *value)

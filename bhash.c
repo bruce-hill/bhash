@@ -58,6 +58,19 @@ hashmap_t *hashmap_new(void)
     return h;
 }
 
+hashmap_t *hashmap_copy(hashmap_t *h)
+{
+    hashmap_t *copy = custom_alloc(sizeof(hashmap_t)); 
+    if (!copy) return copy;
+
+    int capacity = h->capacity;
+    hashmap_entry_t *entries = h->entries;
+    for (int i = 0; i < capacity; i++)
+        if (entries[i].key)
+            (void)hashmap_set(copy, entries[i].key, entries[i].value);
+    return copy;
+}
+
 size_t hashmap_length(hashmap_t *h)
 {
     return (size_t)h->count;
