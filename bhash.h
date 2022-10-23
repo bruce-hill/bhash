@@ -26,7 +26,7 @@ typedef struct hashmap_s {
 } hashmap_t;
 
 // Set custom allocator/freer
-__attribute__((nonnull))
+__attribute__((nonnull(1)))
 void hashmap_set_allocator(void *(*alloc)(size_t), void (*free)(void*));
 
 // Allocate a new hash map
