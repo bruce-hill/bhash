@@ -38,6 +38,7 @@ static void hashmap_resize(hashmap_t *h, int new_size)
     hashmap_t old = *h;
     size_t size = (size_t)new_size*sizeof(hashmap_entry_t);
     h->entries = custom_alloc(size);
+    h->fallback = old.fallback;
     memset(h->entries, 0, size);
     h->capacity = new_size;
     h->count = 0;
@@ -61,7 +62,7 @@ hashmap_t *hashmap_new(void)
 
 hashmap_t *hashmap_copy(hashmap_t *h)
 {
-    hashmap_t *copy = custom_alloc(sizeof(hashmap_t)); 
+    hashmap_t *copy = hashmap_new();
     if (!copy) return copy;
 
     int capacity = h->capacity;
@@ -69,6 +70,7 @@ hashmap_t *hashmap_copy(hashmap_t *h)
     for (int i = 0; i < capacity; i++)
         if (entries[i].key)
             (void)hashmap_set(copy, entries[i].key, entries[i].value);
+    copy->fallback = h->fallback;
     return copy;
 }
 
