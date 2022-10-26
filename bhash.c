@@ -40,6 +40,7 @@ static void hashmap_resize(hashmap_t *h, int new_size)
     h->entries = custom_alloc(size);
     memset(h->entries, 0, size);
     h->capacity = new_size;
+    h->count = 0;
     h->lastfree = &h->entries[new_size - 1];
     if (old.entries) {
         // Rehash:
@@ -131,7 +132,7 @@ void *hashmap_set(hashmap_t *h, const void *key, const void *value)
     }
 
     // Find a free space to insert:
-    while (h->lastfree->key && h->lastfree >= h->entries)
+    while (h->lastfree >= h->entries && h->lastfree->key)
         --h->lastfree;
 
     // No spaces left, gotta resize and try again:
