@@ -49,4 +49,10 @@ install: $(LIBFILE) bhash.h
 uninstall:
 	rm -vf "$(PREFIX)/lib/$(LIBFILE)" "$(PREFIX)/include/$(NAME).h"
 
+stress_test: stress_test.c bhash.o
+	$(CC) $(ALL_FLAGS) -o $@ $< bhash.o
+
+profile: stress_test
+	perf stat -r 1000 -e L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores -e cycles ./stress_test 500 100000000
+
 .PHONY: all install uninstall clean splint
